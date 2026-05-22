@@ -1,12 +1,16 @@
+import os
 import sys
+from pathlib import Path
+
+_SRC_DIR = str(Path(__file__).resolve().parent)
+os.environ["PATH"] = _SRC_DIR + os.pathsep + os.environ["PATH"]
+
 from PySide6.QtGui import QGuiApplication
-from PySide6.QtCore import Qt
 
 from .engine import create_engine
 
 
 def main() -> None:
-    QGuiApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling, True)
     app = QGuiApplication(sys.argv)
     app.setApplicationName("Listream")
     app.setOrganizationName("Listream")

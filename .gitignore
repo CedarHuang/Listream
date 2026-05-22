@@ -3,6 +3,9 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# Bundled mpv library (downloaded separately)
+src/libmpv-2.dll
+
 # C extensions
 *.so
 
