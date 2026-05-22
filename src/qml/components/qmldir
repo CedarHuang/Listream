@@ -1,4 +1,4 @@
-module Listream.Components
+module Components
 TopBar               1.0 TopBar.qml
 SearchBar            1.0 SearchBar.qml
 ChannelList          1.0 ChannelList.qml

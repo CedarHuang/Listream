@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Listream.ViewModels 1.0
-import Listream.Components 1.0
+import Components 1.0
 
 ApplicationWindow {
     id: root
