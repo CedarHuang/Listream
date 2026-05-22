@@ -1,0 +1,9 @@
+module Listream.Components
+TopBar               1.0 TopBar.qml
+SearchBar            1.0 SearchBar.qml
+ChannelList          1.0 ChannelList.qml
+ChannelItem          1.0 ChannelItem.qml
+GroupHeader          1.0 GroupHeader.qml
+PlayerPane           1.0 PlayerPane.qml
+SubscriptionDialog   1.0 SubscriptionDialog.qml
+StatusBar            1.0 StatusBar.qml
