@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 
+from PySide6.QtQuick import QQuickWindow, QSGRendererInterface
 from PySide6.QtQuickControls2 import QQuickStyle
 from PySide6.QtQml import QQmlApplicationEngine, qmlRegisterSingletonType
 
@@ -16,6 +17,9 @@ def create_engine() -> QQmlApplicationEngine:
 
     backend = AppBackend()
     backend.init()
+
+    # 强制 OpenGL 后端 — mpv libmpv VO 需要 OpenGL 互操作
+    QQuickWindow.setGraphicsApi(QSGRendererInterface.GraphicsApi.OpenGL)
 
     # ⚠️ 以下 import 和注册必须在 QQmlApplicationEngine 创建之前执行，
     # 否则 PySide6 shiboken 层的 QML 类型注册会损坏 QtQuick.Controls 内部类型系统。
