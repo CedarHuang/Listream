@@ -2,61 +2,119 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Listream.ViewModels 1.0
+import Theme 1.0
 
 Dialog {
     id: dialog
-    title: "订阅管理"
+    title: ""
     modal: true
-    standardButtons: Dialog.Close
     width: 620
     height: 460
+    topPadding: 0
+    leftPadding: Theme.space6
+    rightPadding: Theme.space6
+    bottomPadding: 0
 
-    background: Rectangle {
-        color: "#1e1e2e"
-        border.color: "#313244"
+    Overlay.modal: Rectangle {
+        color: Theme.overlayDim
     }
 
-    header: Label {
-        text: "订阅管理"
-        color: "#cdd6f4"
-        font.pixelSize: 16
-        padding: 16
+    background: Rectangle {
+        color: Theme.bgOverlay
+        radius: Theme.radiusLg
+    }
+
+    header: Rectangle {
+        height: 48
+        color: "transparent"
+
+        Label {
+            anchors { left: parent.left; leftMargin: Theme.space6; verticalCenter: parent.verticalCenter }
+            text: "订阅管理"
+            color: Theme.textPrimary
+            font.pixelSize: Theme.fontSizeXl
+            font.bold: true
+        }
+
+        Button {
+            id: closeX
+            anchors { right: parent.right; rightMargin: Theme.space3; verticalCenter: parent.verticalCenter }
+            width: 28; height: 28
+            flat: true
+            hoverEnabled: true
+            contentItem: Text {
+                text: "×"
+                color: closeX.hovered ? Theme.textPrimary : Theme.textSecondary
+                font.pixelSize: 20
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+            background: Rectangle {
+                color: closeX.hovered ? Theme.bgHover : "transparent"
+                radius: Theme.radiusSm
+            }
+            onClicked: dialog.close()
+        }
     }
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 12
+        spacing: Theme.space3
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Theme.space3
 
             TextField {
                 id: nameField
-                Layout.preferredWidth: 100
+                Layout.preferredWidth: 120
                 placeholderText: "名称"
-                placeholderTextColor: "#6c7086"
-                color: "#cdd6f4"
-                font.pixelSize: 13
-                background: Rectangle { color: "#313244"; radius: 4 }
+                placeholderTextColor: Theme.textMuted
+                color: Theme.textPrimary
+                font.pixelSize: Theme.fontSizeMd
+                background: Rectangle {
+                    color: Theme.bgField
+                    radius: Theme.radiusSm
+                    border.width: 1
+                    border.color: nameField.activeFocus ? Theme.accent : Theme.border
+                }
             }
 
             TextField {
                 id: urlField
                 Layout.fillWidth: true
                 placeholderText: "M3U 地址"
-                placeholderTextColor: "#6c7086"
-                color: "#cdd6f4"
-                font.pixelSize: 13
-                background: Rectangle { color: "#313244"; radius: 4 }
+                placeholderTextColor: Theme.textMuted
+                color: Theme.textPrimary
+                font.pixelSize: Theme.fontSizeMd
+                background: Rectangle {
+                    color: Theme.bgField
+                    radius: Theme.radiusSm
+                    border.width: 1
+                    border.color: urlField.activeFocus ? Theme.accent : Theme.border
+                }
             }
 
             Button {
                 id: addBtn
                 text: AppBackend.busy ? "添加中..." : "添加"
-                palette.buttonText: "#cdd6f4"
-                background: Rectangle { color: "#45475a"; radius: 4; implicitWidth: 64; implicitHeight: 34 }
+                font.pixelSize: Theme.fontSizeMd
                 enabled: !AppBackend.busy && nameField.text !== "" && urlField.text !== ""
+                hoverEnabled: true
+                contentItem: Text {
+                    text: addBtn.text
+                    color: Theme.textOnAccent
+                    font: addBtn.font
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    opacity: addBtn.enabled ? 1.0 : 0.5
+                }
+                background: Rectangle {
+                    color: addBtn.enabled ? (addBtn.hovered ? Theme.accentHover : Theme.accent) : Theme.bgHover
+                    radius: Theme.radiusSm
+                    implicitWidth: 72
+                    implicitHeight: 34
+                }
                 onClicked: {
                     AppBackend.addSubscription(nameField.text, urlField.text)
                     nameField.text = ""
@@ -71,34 +129,46 @@ Dialog {
             Layout.fillHeight: true
             clip: true
             model: SubscriptionListModel
+            spacing: 0
 
             delegate: Rectangle {
                 id: row
                 width: subListView.width
-                height: 48
-                color: index % 2 === 0 ? "#1e1e2e" : "#181825"
+                height: 53
+                color: row.editing ? Theme.bgField : (itemHover.hovered ? Theme.bgHover : "transparent")
                 property bool editing: false
 
-                Rectangle {
+                Behavior on color {
+                    ColorAnimation { duration: Theme.animFast }
+                }
+
+                MouseArea {
+                    id: itemHover
                     anchors.fill: parent
-                    color: "#313244"
-                    visible: row.editing
+                    hoverEnabled: true
+                    acceptedButtons: Qt.NoButton
+                }
+
+                Rectangle {
+                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                    height: 1
+                    color: Theme.border
                 }
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 6
-                    spacing: 6
+                    anchors.leftMargin: Theme.space2
+                    anchors.rightMargin: Theme.space2
+                    spacing: Theme.space3
 
                     Switch {
                         id: enabledSwitch
                         checked: model.enabled !== undefined ? model.enabled : true
-                        palette.button: "#45475a"
+                        palette.button: Theme.bgHover
                         Layout.preferredWidth: 40
                         onToggled: AppBackend.setSubscriptionEnabled(model.subId, checked)
                     }
 
-                    // 名称 + URL 上下排列
                     Item {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
@@ -109,12 +179,11 @@ Dialog {
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: 2
 
-                            // 显示模式
                             Text {
                                 visible: !row.editing
                                 text: model.subName
-                                color: enabledSwitch.checked ? "#cdd6f4" : "#6c7086"
-                                font.pixelSize: 13
+                                color: enabledSwitch.checked ? Theme.textPrimary : Theme.textDisabled
+                                font.pixelSize: Theme.fontSizeMd
                                 font.bold: true
                                 elide: Text.ElideRight
                             }
@@ -122,47 +191,44 @@ Dialog {
                             Text {
                                 visible: !row.editing
                                 text: model.subUrl
-                                color: enabledSwitch.checked ? "#6c7086" : "#45475a"
-                                font.pixelSize: 11
+                                color: enabledSwitch.checked ? Theme.textSecondary : Theme.textDisabled
+                                font.pixelSize: Theme.fontSizeXs
                                 elide: Text.ElideMiddle
                             }
 
-                            // 编辑模式
                             TextField {
                                 id: editName
                                 visible: row.editing
                                 text: model.subName
-                                color: "#cdd6f4"
-                                font.pixelSize: 13
+                                color: Theme.textPrimary
+                                font.pixelSize: Theme.fontSizeMd
                                 font.bold: true
-                                background: Rectangle { color: "#45475a"; radius: 4 }
+                                background: Rectangle { color: Theme.bgSurface; radius: Theme.radiusSm }
                             }
 
                             TextField {
                                 id: editUrl
                                 visible: row.editing
                                 text: model.subUrl
-                                color: "#cdd6f4"
-                                font.pixelSize: 11
-                                background: Rectangle { color: "#45475a"; radius: 4 }
+                                color: Theme.textPrimary
+                                font.pixelSize: Theme.fontSizeXs
+                                background: Rectangle { color: Theme.bgSurface; radius: Theme.radiusSm }
                             }
                         }
                     }
 
                     Text {
                         text: model.channelCount + " 个"
-                        color: "#a6adc8"
-                        font.pixelSize: 12
+                        color: Theme.textSecondary
+                        font.pixelSize: Theme.fontSizeSm
                         Layout.preferredWidth: 40
                     }
 
-                    // 显示模式 — 按钮组
-                    Button {
+                    TextButton {
                         visible: !row.editing
                         text: "编辑"
-                        flat: true
-                        palette.buttonText: "#89b4fa"
-                        font.pixelSize: 12
+                        textColor: Theme.accent
+                        font.pixelSize: Theme.fontSizeSm
                         onClicked: {
                             row.editing = true
                             editName.text = model.subName
@@ -170,32 +236,28 @@ Dialog {
                         }
                     }
 
-                    Button {
+                    TextButton {
                         visible: !row.editing
                         text: "刷新"
-                        flat: true
-                        palette.buttonText: "#89b4fa"
-                        font.pixelSize: 12
+                        textColor: Theme.accent
+                        font.pixelSize: Theme.fontSizeSm
                         enabled: !AppBackend.busy
                         onClicked: AppBackend.refreshSubscription(model.subId)
                     }
 
-                    Button {
+                    TextButton {
                         visible: !row.editing
                         text: "删除"
-                        flat: true
-                        palette.buttonText: "#f38ba8"
-                        font.pixelSize: 12
+                        textColor: Theme.error
+                        font.pixelSize: Theme.fontSizeSm
                         onClicked: confirmDelete.open()
                     }
 
-                    // 编辑模式 — 按钮组
-                    Button {
+                    TextButton {
                         visible: row.editing
                         text: "保存"
-                        flat: true
-                        palette.buttonText: "#a6e3a1"
-                        font.pixelSize: 12
+                        textColor: Theme.success
+                        font.pixelSize: Theme.fontSizeSm
                         enabled: editName.text !== "" && editUrl.text !== ""
                         onClicked: {
                             AppBackend.updateSubscription(model.subId, editName.text, editUrl.text)
@@ -203,12 +265,11 @@ Dialog {
                         }
                     }
 
-                    Button {
+                    TextButton {
                         visible: row.editing
                         text: "取消"
-                        flat: true
-                        palette.buttonText: "#6c7086"
-                        font.pixelSize: 12
+                        textColor: Theme.textMuted
+                        font.pixelSize: Theme.fontSizeSm
                         onClicked: {
                             editName.text = model.subName
                             editUrl.text = model.subUrl
@@ -218,25 +279,80 @@ Dialog {
 
                     Dialog {
                         id: confirmDelete
-                        title: "确认删除"
+                        title: ""
                         modal: true
-                        standardButtons: Dialog.Yes | Dialog.No
-                        implicitWidth: 300
+                        width: 360
+                        topPadding: Theme.space6
+                        leftPadding: Theme.space6
+                        rightPadding: Theme.space6
+                        bottomPadding: Theme.space6
+
+                        implicitHeight: topPadding + contentItem.implicitHeight + bottomPadding
+
+                        Overlay.modal: Rectangle {
+                            color: Theme.overlayDim
+                        }
 
                         background: Rectangle {
-                            color: "#1e1e2e"
-                            border.color: "#f38ba8"
+                            color: Theme.bgOverlay
+                            radius: Theme.radiusLg
                         }
 
-                        Label {
-                            text: "删除订阅 \"" + model.subName + "\" 及其所有频道？\n此操作不可撤销。"
-                            color: "#cdd6f4"
-                            font.pixelSize: 13
-                            wrapMode: Text.WordWrap
-                            width: parent.width
-                        }
+                        contentItem: ColumnLayout {
+                            spacing: Theme.space4
 
-                        onAccepted: AppBackend.removeSubscription(model.subId)
+                            Label {
+                                text: "确认删除"
+                                color: Theme.textPrimary
+                                font.pixelSize: Theme.fontSizeXl
+                                font.bold: true
+                            }
+
+                            Label {
+                                text: "删除订阅 \"" + model.subName + "\" 及其所有频道？\n此操作不可撤销。"
+                                color: Theme.textSecondary
+                                font.pixelSize: Theme.fontSizeMd
+                                wrapMode: Text.WordWrap
+                                Layout.fillWidth: true
+                            }
+
+                            RowLayout {
+                                Layout.alignment: Qt.AlignRight
+                                Layout.topMargin: Theme.space2
+                                spacing: Theme.space3
+
+                                TextButton {
+                                    text: "取消"
+                                    textColor: Theme.textSecondary
+                                    font.pixelSize: Theme.fontSizeMd
+                                    onClicked: confirmDelete.close()
+                                }
+
+                                Button {
+                                    id: delBtn
+                                    text: "删除"
+                                    font.pixelSize: Theme.fontSizeMd
+                                    hoverEnabled: true
+                                    contentItem: Text {
+                                        text: delBtn.text
+                                        color: Theme.textOnAccent
+                                        font: delBtn.font
+                                        horizontalAlignment: Text.AlignHCenter
+                                        verticalAlignment: Text.AlignVCenter
+                                    }
+                                    background: Rectangle {
+                                        color: delBtn.hovered ? Theme.errorHover : Theme.error
+                                        radius: Theme.radiusSm
+                                        implicitWidth: 72
+                                        implicitHeight: 34
+                                    }
+                                    onClicked: {
+                                        AppBackend.removeSubscription(model.subId)
+                                        confirmDelete.close()
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

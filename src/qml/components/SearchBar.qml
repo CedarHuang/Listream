@@ -2,27 +2,30 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Listream.ViewModels 1.0
+import Theme 1.0
 
 Rectangle {
-    height: 40
-    color: "#1e1e2e"
+    height: Theme.space10
+    color: Theme.bgSidebar
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 8
-        spacing: 6
+        anchors.margins: Theme.space2
+        spacing: Theme.space1
 
         TextField {
             id: field
             Layout.fillWidth: true
             placeholderText: "搜索频道..."
-            placeholderTextColor: "#6c7086"
-            color: "#cdd6f4"
-            font.pixelSize: 13
-            leftPadding: 10
+            placeholderTextColor: Theme.textMuted
+            color: Theme.textPrimary
+            font.pixelSize: Theme.fontSizeMd
+            leftPadding: Theme.space3
             background: Rectangle {
-                color: "#313244"
-                radius: 6
+                color: Theme.bgField
+                radius: Theme.radiusMd
+                border.width: 1
+                border.color: field.activeFocus ? Theme.accent : Theme.border
             }
             onTextChanged: ChannelFilterModel.setFilterText(text)
         }
@@ -30,8 +33,8 @@ Rectangle {
         Text {
             visible: field.text !== ""
             text: ChannelFilterModel.filteredCount + "/" + ChannelFilterModel.totalCount
-            color: "#6c7086"
-            font.pixelSize: 12
+            color: Theme.textMuted
+            font.pixelSize: Theme.fontSizeSm
         }
     }
 }

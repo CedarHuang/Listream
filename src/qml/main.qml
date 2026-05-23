@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Listream.ViewModels 1.0
 import Components 1.0
+import Theme 1.0
 
 ApplicationWindow {
     id: root
@@ -10,7 +11,7 @@ ApplicationWindow {
     height: 720
     title: "Listream"
     visible: true
-    color: "#1e1e2e"
+    color: Theme.bgWindow
     flags: Qt.Window | Qt.FramelessWindowHint
     property bool sidebarCollapsed: false
     property bool _sidebarBeforeFullscreen: false
@@ -36,8 +37,8 @@ ApplicationWindow {
         }
     }
 
-    onVisibilityChanged: {
-        if (visibility !== Window.FullScreen && _sidebarBeforeFullscreen !== sidebarCollapsed) {
+    onVisibilityChanged: (v) => {
+        if (v !== Window.FullScreen && _sidebarBeforeFullscreen !== sidebarCollapsed) {
             root._skipAnim = true
             sidebarCollapsed = _sidebarBeforeFullscreen
             animTimer.start()
@@ -68,12 +69,12 @@ ApplicationWindow {
                 id: sidebar
                 anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
                 width: root.sidebarCollapsed ? 0 : 300
-                color: "#181825"
+                color: Theme.bgSidebar
                 clip: true
 
                 Behavior on width {
                     enabled: !root._skipAnim
-                    NumberAnimation { duration: 180; easing.type: Easing.InOutQuad }
+                    NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic }
                 }
 
                 ColumnLayout {
@@ -85,9 +86,21 @@ ApplicationWindow {
                 }
             }
 
-            PlayerPane {
+            Rectangle {
+                id: sidebarBorder
                 anchors {
                     left: sidebar.right
+                    top: parent.top
+                    bottom: parent.bottom
+                }
+                width: 1
+                color: Theme.border
+                visible: sidebar.width > 0
+            }
+
+            PlayerPane {
+                anchors {
+                    left: sidebarBorder.right
                     right: parent.right
                     top: parent.top
                     bottom: parent.bottom
@@ -105,8 +118,8 @@ ApplicationWindow {
                 width: collapsed ? 22 : 24
                 height: 60
                 topLeftRadius: 0; bottomLeftRadius: 0
-                topRightRadius: 4; bottomRightRadius: 4
-                color: toggleMouse.containsMouse ? "#45475a" : "#313244"
+                topRightRadius: Theme.radiusSm; bottomRightRadius: Theme.radiusSm
+                color: toggleMouse.containsMouse ? Theme.bgHover : Theme.bgSurface
 
                 MouseArea {
                     id: toggleMouse
@@ -123,7 +136,7 @@ ApplicationWindow {
                     onPaint: {
                         var ctx = getContext("2d")
                         ctx.clearRect(0, 0, width, height)
-                        ctx.strokeStyle = "#a6adc8"; ctx.lineWidth = 1.5
+                        ctx.strokeStyle = Theme.textSecondary; ctx.lineWidth = 1.5
                         ctx.beginPath()
                         if (toggleBtn.collapsed) {
                             ctx.moveTo(6, 1); ctx.lineTo(2, 6); ctx.lineTo(6, 11)
@@ -205,19 +218,45 @@ ApplicationWindow {
         title: ""
         property alias text: msgText.text
         modal: true
-        standardButtons: Dialog.Ok
-        implicitWidth: Math.min(500, Math.max(200, msgText.implicitWidth + leftPadding + rightPadding))
+        implicitWidth: Math.min(500, Math.max(280, msgText.implicitWidth + Theme.space6 * 2))
         anchors.centerIn: parent
 
-        background: Rectangle {
-            color: "#1e1e2e"
-            border.color: "#f38ba8"
+        Overlay.modal: Rectangle {
+            color: Theme.overlayDim
         }
 
-        Label {
-            id: msgText
-            color: "#cdd6f4"
-            font.pixelSize: 13
+        background: Rectangle {
+            color: Theme.bgOverlay
+            border.color: Theme.error
+            radius: Theme.radiusLg
+        }
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: Theme.space6
+            spacing: Theme.space4
+
+            Label {
+                id: msgText
+                color: Theme.textPrimary
+                font.pixelSize: Theme.fontSizeMd
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+            }
+
+            Button {
+                Layout.alignment: Qt.AlignRight
+                text: "确定"
+                palette.buttonText: Theme.textPrimary
+                font.pixelSize: Theme.fontSizeMd
+                background: Rectangle {
+                    color: Theme.bgHover
+                    radius: Theme.radiusSm
+                    implicitWidth: 72
+                    implicitHeight: 34
+                }
+                onClicked: errorDialog.close()
+            }
         }
     }
 

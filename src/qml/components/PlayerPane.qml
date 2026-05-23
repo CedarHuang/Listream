@@ -2,10 +2,11 @@ import QtQuick
 import QtQuick.Controls
 import Listream.ViewModels 1.0
 import Listream.QmlItems 1.0
+import Theme 1.0
 
 Rectangle {
     id: pane
-    color: "#000000"
+    color: Theme.bgPlayer
 
     MpvRenderer {
         id: mpvRenderer
@@ -16,34 +17,46 @@ Rectangle {
 
     Rectangle {
         anchors.fill: parent
-        color: "#1e1e2e"
         visible: PlayerController.status === "idle" || PlayerController.status === "stopped"
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: Theme.bgWindow }
+            GradientStop { position: 1.0; color: Theme.bgPlayer }
+        }
 
         Column {
             anchors.centerIn: parent
-            spacing: 12
+            spacing: Theme.space4
+
+            Image {
+                anchors.horizontalCenter: parent.horizontalCenter
+                source: "qrc:/assets/icon.svg"
+                sourceSize.width: 48
+                sourceSize.height: 48
+                width: 48
+                height: 48
+            }
 
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "选择一个频道开始播放"
-                color: "#6c7086"
-                font.pixelSize: 16
+                color: Theme.textSecondary
+                font.pixelSize: Theme.fontSizeXl
             }
 
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 visible: AppBackend.lastChannelName !== ""
                 text: "上次观看: " + AppBackend.lastChannelName
-                color: "#a6adc8"
-                font.pixelSize: 13
+                color: Theme.textMuted
+                font.pixelSize: Theme.fontSizeMd
             }
 
-            Button {
+            TextButton {
                 anchors.horizontalCenter: parent.horizontalCenter
                 visible: AppBackend.lastChannelUrl !== ""
                 text: "继续播放"
-                flat: true
-                palette.buttonText: "#89b4fa"
+                textColor: Theme.accent
+                font.pixelSize: Theme.fontSizeMd
                 onClicked: AppBackend.playChannel(AppBackend.lastChannelUrl, AppBackend.lastChannelName)
             }
         }
@@ -52,21 +65,24 @@ Rectangle {
     Rectangle {
         anchors.centerIn: parent
         width: 100; height: 100
-        radius: 12
-        color: "#313244"
+        radius: Theme.radiusLg
+        color: Theme.bgOverlay
+        opacity: 0.92
         visible: PlayerController.status === "loading"
 
         Column {
             anchors.centerIn: parent
-            spacing: 12
+            spacing: Theme.space3
             BusyIndicator {
+                id: spinner
                 anchors.horizontalCenter: parent.horizontalCenter
-                palette.dark: "#89b4fa"
+                palette.dark: Theme.accent
+                running: PlayerController.status === "loading"
             }
             Text {
                 text: "加载中..."
-                color: "#a6adc8"
-                font.pixelSize: 13
+                color: Theme.textSecondary
+                font.pixelSize: Theme.fontSizeMd
                 anchors.horizontalCenter: parent.horizontalCenter
             }
         }

@@ -2,29 +2,64 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Listream.ViewModels 1.0
+import Theme 1.0
 
 Dialog {
     id: dialog
-    title: "关于"
+    title: ""
     modal: true
-    standardButtons: Dialog.Close
-    implicitWidth: 340
+    width: 340
+    topPadding: 0
+    leftPadding: Theme.space6
+    rightPadding: Theme.space6
+    bottomPadding: Theme.space6
+
+    implicitHeight: header.height + topPadding + contentItem.implicitHeight + bottomPadding
+
+    Overlay.modal: Rectangle {
+        color: Theme.overlayDim
+    }
 
     background: Rectangle {
-        color: "#1e1e2e"
-        border.color: "#313244"
+        color: Theme.bgOverlay
+        radius: Theme.radiusLg
     }
 
-    header: Label {
-        text: "关于 Listream"
-        color: "#cdd6f4"
-        font.pixelSize: 16
-        padding: 16
+    header: Rectangle {
+        height: 48
+        color: "transparent"
+
+        Label {
+            anchors { left: parent.left; leftMargin: Theme.space6; verticalCenter: parent.verticalCenter }
+            text: "关于 Listream"
+            color: Theme.textPrimary
+            font.pixelSize: Theme.fontSizeXl
+            font.bold: true
+        }
+
+        Button {
+            id: closeX
+            anchors { right: parent.right; rightMargin: Theme.space3; verticalCenter: parent.verticalCenter }
+            width: 28; height: 28
+            flat: true
+            hoverEnabled: true
+            contentItem: Text {
+                text: "×"
+                color: closeX.hovered ? Theme.textPrimary : Theme.textSecondary
+                font.pixelSize: 20
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+            background: Rectangle {
+                color: closeX.hovered ? Theme.bgHover : "transparent"
+                radius: Theme.radiusSm
+            }
+            onClicked: dialog.close()
+        }
     }
 
-    ColumnLayout {
-        anchors.fill: parent
-        spacing: 12
+    contentItem: ColumnLayout {
+        spacing: Theme.space4
 
         Image {
             source: "qrc:/assets/icon.svg"
@@ -35,32 +70,32 @@ Dialog {
 
         Label {
             text: "Listream"
-            color: "#cdd6f4"
-            font.pixelSize: 18
+            color: Theme.textPrimary
+            font.pixelSize: Theme.fontSizeXxl
             font.bold: true
             Layout.alignment: Qt.AlignHCenter
         }
 
         Label {
             text: "v" + AppBackend.version
-            color: "#a6adc8"
-            font.pixelSize: 13
+            color: Theme.textSecondary
+            font.pixelSize: Theme.fontSizeMd
             Layout.alignment: Qt.AlignHCenter
         }
 
         Label {
             text: "IPTV 直播流播放器"
-            color: "#a6adc8"
-            font.pixelSize: 13
+            color: Theme.textSecondary
+            font.pixelSize: Theme.fontSizeMd
             Layout.alignment: Qt.AlignHCenter
         }
 
         Label {
             text: '<a href="https://github.com/CedarHuang/Listream">GitHub</a>'
-            color: "#cdd6f4"
-            font.pixelSize: 13
+            color: Theme.textPrimary
+            font.pixelSize: Theme.fontSizeMd
             textFormat: Text.StyledText
-            linkColor: "#89b4fa"
+            linkColor: Theme.accent
             onLinkActivated: link => Qt.openUrlExternally(link)
             Layout.alignment: Qt.AlignHCenter
         }
@@ -68,21 +103,21 @@ Dialog {
         Rectangle {
             Layout.fillWidth: true
             height: 1
-            color: "#313244"
+            color: Theme.border
         }
 
         Label {
             text: "Apache License 2.0"
-            color: "#6c7086"
-            font.pixelSize: 12
+            color: Theme.textMuted
+            font.pixelSize: Theme.fontSizeSm
             horizontalAlignment: Text.AlignHCenter
             Layout.alignment: Qt.AlignHCenter
         }
 
         Label {
             text: "Copyright © 2026 CedarHuang"
-            color: "#6c7086"
-            font.pixelSize: 12
+            color: Theme.textMuted
+            font.pixelSize: Theme.fontSizeSm
             horizontalAlignment: Text.AlignHCenter
             Layout.alignment: Qt.AlignHCenter
         }

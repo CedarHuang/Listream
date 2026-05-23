@@ -1,11 +1,12 @@
 import QtQuick
 import QtQuick.Controls
 import Listream.ViewModels 1.0
+import Theme 1.0
 
 Rectangle {
     id: bar
-    height: 40
-    color: "#11111b"
+    height: Theme.space10
+    color: Theme.bgWindow
 
     MouseArea {
         anchors.fill: parent
@@ -53,8 +54,8 @@ Rectangle {
     Row {
         anchors.verticalCenter: parent.verticalCenter
         anchors.left: parent.left
-        anchors.leftMargin: 12
-        spacing: 8
+        anchors.leftMargin: Theme.space3
+        spacing: Theme.space2
 
         Image {
             anchors.verticalCenter: parent.verticalCenter
@@ -68,47 +69,39 @@ Rectangle {
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: "Listream"
-            color: "#cdd6f4"
-            font.pixelSize: 14
+            color: Theme.textPrimary
+            font.pixelSize: Theme.fontSizeLg
             font.bold: true
         }
 
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             width: 1; height: 16
-            color: "#45475a"
+            color: Theme.borderLight
         }
 
-        Button {
+        TextButton {
             text: "订阅管理"
-            flat: true
-            font.pixelSize: 13
-            palette.buttonText: "#cdd6f4"
+            font.pixelSize: Theme.fontSizeMd
             onClicked: subDialog.open()
         }
 
-        Button {
+        TextButton {
             text: AppBackend.busy ? "刷新中..." : "全部刷新"
-            flat: true
-            font.pixelSize: 13
-            palette.buttonText: AppBackend.busy ? "#6c7086" : "#cdd6f4"
+            font.pixelSize: Theme.fontSizeMd
             enabled: !AppBackend.busy
             onClicked: AppBackend.refreshAll()
         }
 
-        Button {
+        TextButton {
             text: "设置"
-            flat: true
-            font.pixelSize: 13
-            palette.buttonText: "#cdd6f4"
+            font.pixelSize: Theme.fontSizeMd
             onClicked: settingsDialog.open()
         }
 
-        Button {
+        TextButton {
             text: "关于"
-            flat: true
-            font.pixelSize: 13
-            palette.buttonText: "#cdd6f4"
+            font.pixelSize: Theme.fontSizeMd
             onClicked: aboutDialog.open()
         }
     }
@@ -125,7 +118,10 @@ Rectangle {
             hoverEnabled: true
             flat: true
             padding: 0
-            background: Rectangle { color: minBtn.hovered ? "#45475a" : "transparent" }
+            background: Rectangle {
+                color: minBtn.hovered ? Theme.bgHover : "transparent"
+                radius: Theme.radiusSm
+            }
             onClicked: bar.Window.window.showMinimized()
             contentItem: Item {
                 Canvas {
@@ -133,7 +129,7 @@ Rectangle {
                     width: 12; height: 12
                     onPaint: {
                         var ctx = getContext("2d")
-                        ctx.strokeStyle = "#cdd6f4"; ctx.lineWidth = 1.3
+                        ctx.strokeStyle = Theme.textPrimary; ctx.lineWidth = 1.5
                         ctx.beginPath()
                         ctx.moveTo(2, 10); ctx.lineTo(10, 10)
                         ctx.stroke()
@@ -148,7 +144,10 @@ Rectangle {
             hoverEnabled: true
             flat: true
             padding: 0
-            background: Rectangle { color: maxBtn.hovered ? "#45475a" : "transparent" }
+            background: Rectangle {
+                color: maxBtn.hovered ? Theme.bgHover : "transparent"
+                radius: Theme.radiusSm
+            }
             onClicked: {
                 var win = bar.Window.window
                 if (win.visibility === Window.Maximized) win.showNormal()
@@ -163,7 +162,7 @@ Rectangle {
                     width: 12; height: 12
                     onPaint: {
                         var ctx = getContext("2d")
-                        ctx.strokeStyle = "#cdd6f4"; ctx.lineWidth = 1.3
+                        ctx.strokeStyle = Theme.textPrimary; ctx.lineWidth = 1.5
                         ctx.beginPath()
                         ctx.rect(2, 3, 8, 7)
                         ctx.stroke()
@@ -178,7 +177,10 @@ Rectangle {
             hoverEnabled: true
             flat: true
             padding: 0
-            background: Rectangle { color: closeBtn.hovered ? "#e64553" : "transparent" }
+            background: Rectangle {
+                color: closeBtn.hovered ? Theme.error : "transparent"
+                radius: Theme.radiusSm
+            }
             onClicked: bar.Window.window.close()
             contentItem: Item {
                 Canvas {
@@ -186,7 +188,8 @@ Rectangle {
                     width: 12; height: 12
                     onPaint: {
                         var ctx = getContext("2d")
-                        ctx.strokeStyle = closeBtn.hovered ? "#ffffff" : "#cdd6f4"; ctx.lineWidth = 1.3
+                        ctx.strokeStyle = closeBtn.hovered ? Theme.textOnAccent : Theme.textPrimary
+                        ctx.lineWidth = 1.5
                         ctx.beginPath()
                         ctx.moveTo(2, 2); ctx.lineTo(10, 10)
                         ctx.moveTo(10, 2); ctx.lineTo(2, 10)
