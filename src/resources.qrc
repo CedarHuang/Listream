@@ -11,6 +11,7 @@
     <file>qml/Components/SubscriptionDialog.qml</file>
     <file>qml/Components/SettingsDialog.qml</file>
     <file>qml/Components/StatusBar.qml</file>
+    <file>qml/Components/AboutDialog.qml</file>
     <file>assets/icon.svg</file>
   </qresource>
 </RCC>

@@ -100,6 +100,14 @@ Rectangle {
             palette.buttonText: "#cdd6f4"
             onClicked: settingsDialog.open()
         }
+
+        Button {
+            text: "关于"
+            flat: true
+            font.pixelSize: 13
+            palette.buttonText: "#cdd6f4"
+            onClicked: aboutDialog.open()
+        }
     }
 
     Row {
@@ -140,4 +148,5 @@ Rectangle {
 
     SubscriptionDialog { id: subDialog }
     SettingsDialog { id: settingsDialog }
+    AboutDialog { id: aboutDialog }
 }

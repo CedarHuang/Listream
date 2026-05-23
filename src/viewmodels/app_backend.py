@@ -49,6 +49,11 @@ class AppBackend(QObject):
     def player(self) -> PlayerController:
         return self._player
 
+    @Property(str, constant=True)
+    def version(self) -> str:
+        from .. import __version__
+        return __version__
+
     @Property(str, notify=lastChannelChanged)
     def lastChannelUrl(self) -> str:
         if self._last_channel:

@@ -8,3 +8,4 @@ PlayerPane           1.0 PlayerPane.qml
 SubscriptionDialog   1.0 SubscriptionDialog.qml
 SettingsDialog       1.0 SettingsDialog.qml
 StatusBar            1.0 StatusBar.qml
+AboutDialog          1.0 AboutDialog.qml
