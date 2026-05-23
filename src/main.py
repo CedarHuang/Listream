@@ -6,7 +6,7 @@ from pathlib import Path
 _SRC_DIR = Path(__file__).resolve().parent
 os.environ["PATH"] = str(_SRC_DIR / "libs") + os.pathsep + os.environ["PATH"]
 
-from PySide6.QtGui import QGuiApplication
+from PySide6.QtGui import QGuiApplication, QIcon
 
 if __package__ is None:
     _ROOT = str(Path(__file__).resolve().parent.parent)
@@ -23,6 +23,7 @@ def main() -> None:
     logging.getLogger("main").info("Listream 启动")
 
     app = QGuiApplication(sys.argv)
+    app.setWindowIcon(QIcon(":/assets/icon.svg"))
     app.setApplicationName("Listream")
     app.setOrganizationName("Listream")
 
