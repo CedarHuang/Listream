@@ -13,14 +13,16 @@ from .storage import (
 )
 from .m3u_parser import parse_m3u
 from .fetcher import Fetcher
+from .logo_cache import LogoCache
 from ..models.subscription import Subscription
 from ..models.channel import Channel
 
 
 class SubscriptionManager:
-    def __init__(self, fetcher: Fetcher | None = None):
+    def __init__(self, fetcher: Fetcher | None = None, logo_cache: LogoCache | None = None):
         ensure_dirs()
         self._fetcher = fetcher
+        self._logo_cache = logo_cache
         self._subscriptions: list[Subscription] = []
         self._all_channels: list[Channel] = []
         self._on_channels_changed = None
@@ -133,15 +135,25 @@ class SubscriptionManager:
 
     def _rebuild_channels(self) -> None:
         all_ch: list[Channel] = []
+        logo_urls: list[str] = []
         for s in self._subscriptions:
             if not s.enabled:
                 continue
             cached = load_channel_cache(s.id)
             if cached:
+                for d in cached:
+                    url = d.get("logo", "")
+                    if url and self._logo_cache:
+                        resolved = self._logo_cache.resolve(url)
+                        d["logo"] = resolved
+                        if url == resolved:
+                            logo_urls.append(url)
                 all_ch.extend(Channel.from_dict(d) for d in cached)
         self._all_channels = all_ch
         if self._on_channels_changed:
             self._on_channels_changed()
+        if self._logo_cache and logo_urls:
+            self._logo_cache.prefetch(logo_urls)
 
     def _persist(self) -> None:
         data = load_config()

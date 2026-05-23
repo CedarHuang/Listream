@@ -4,6 +4,7 @@ from PySide6.QtCore import Property, QObject, Signal, Slot
 from PySide6.QtGui import QCursor
 
 from ..services.subscription_manager import SubscriptionManager
+from ..services.logo_cache import LogoCache
 from ..services.fetcher import Fetcher
 from ..services.storage import (
     load_last_channel,
@@ -34,7 +35,8 @@ class AppBackend(QObject):
         self._player = PlayerController(self)
         self._fetcher = Fetcher(self)
         self._fetcher.fetched.connect(self._on_fetched)
-        self._manager = SubscriptionManager(self._fetcher)
+        self._logo_cache = LogoCache(self)
+        self._manager = SubscriptionManager(self._fetcher, self._logo_cache)
         self._manager.set_on_channels_changed(self._on_channels_changed)
         self._last_channel = load_last_channel()
         self._busy_count = 0

@@ -23,8 +23,13 @@ def cache_dir() -> Path:
     return _appdata_dir() / "cache"
 
 
+def logo_cache_dir() -> Path:
+    return cache_dir() / "logos"
+
+
 def ensure_dirs() -> None:
     cache_dir().mkdir(parents=True, exist_ok=True)
+    logo_cache_dir().mkdir(parents=True, exist_ok=True)
 
 
 def load_json(path: Path) -> dict:
