@@ -1,4 +1,8 @@
+import logging
+
 from PySide6.QtCore import QObject, Signal, Slot, Property
+
+logger = logging.getLogger(__name__)
 
 
 class PlayerController(QObject):
@@ -20,6 +24,8 @@ class PlayerController(QObject):
 
     def _on_renderer_status(self, status: str) -> None:
         self._status = status
+        if status.startswith("error:"):
+            logger.error("渲染器错误: %s", status)
         self.statusChanged.emit(status)
 
     @Property(float, notify=volumeChanged)
@@ -40,6 +46,7 @@ class PlayerController(QObject):
 
     @Slot(str, str)
     def play(self, url: str, title: str) -> None:
+        logger.info("播放 title=%s", title)
         self._title = title
         self.titleChanged.emit()
         if self._renderer:
@@ -47,6 +54,7 @@ class PlayerController(QObject):
 
     @Slot()
     def stop(self) -> None:
+        logger.info("停止播放")
         if self._renderer:
             self._renderer.stop()
 

@@ -1,7 +1,10 @@
+import logging
 from pathlib import Path
 
 from PySide6.QtQuickControls2 import QQuickStyle
 from PySide6.QtQml import QQmlApplicationEngine, qmlRegisterSingletonType
+
+logger = logging.getLogger(__name__)
 
 QML_DIR = Path(__file__).resolve().parent / "qml"
 
@@ -37,6 +40,7 @@ def create_engine() -> QQmlApplicationEngine:
     QQuickStyle.setStyle("Fusion")
     engine.load(str(QML_DIR / "main.qml"))
     if not engine.rootObjects():
+        logger.error("QML 加载失败，无法创建窗口")
         import sys
         sys.exit(-1)
     return engine

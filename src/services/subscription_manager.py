@@ -1,4 +1,7 @@
+import logging
 from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
 
 from .storage import (
     ensure_dirs,
@@ -42,6 +45,7 @@ class SubscriptionManager:
     def add(self, name: str, url: str) -> Subscription:
         sub = Subscription(name=name, url=url)
         self._subscriptions.append(sub)
+        logger.info("添加订阅 name=%s url=%s", name, url)
         self._persist()
         self._schedule_fetch(sub)
         return sub
@@ -50,6 +54,7 @@ class SubscriptionManager:
         self._subscriptions = [
             s for s in self._subscriptions if s.id != subscription_id
         ]
+        logger.info("删除订阅 subscription_id=%s", subscription_id)
         delete_channel_cache(subscription_id)
         self._persist()
         self._rebuild_channels()
@@ -87,6 +92,7 @@ class SubscriptionManager:
                     s.channel_count = len(channels)
                     s.last_updated = datetime.now(timezone.utc).isoformat()
                     s.error_message = ""
+                    logger.info("解析完成 subscription_id=%s channel_count=%d", subscription_id, len(channels))
                     save_channel_cache(
                         subscription_id,
                         [ch.to_dict() for ch in channels],

@@ -1,3 +1,5 @@
+import logging
+
 from PySide6.QtCore import QObject, Signal, Slot
 
 from ..services.subscription_manager import SubscriptionManager
@@ -6,6 +8,8 @@ from ..services.storage import load_last_channel, save_last_channel
 from .channel_list_model import ChannelListModel, ChannelFilterModel
 from .subscription_list_model import SubscriptionListModel
 from .player_controller import PlayerController
+
+logger = logging.getLogger(__name__)
 
 
 class AppBackend(QObject):
@@ -58,11 +62,13 @@ class AppBackend(QObject):
 
     @Slot(str, str)
     def addSubscription(self, name: str, url: str) -> None:
+        logger.info("添加订阅 name=%s url=%s", name, url)
         self._manager.add(name, url)
         self._sub_model.replace_all(self._manager.subscriptions)
 
     @Slot(str)
     def removeSubscription(self, sub_id: str) -> None:
+        logger.info("删除订阅 subscription_id=%s", sub_id)
         self._manager.remove(sub_id)
         self._sub_model.replace_all(self._manager.subscriptions)
 
@@ -86,6 +92,7 @@ class AppBackend(QObject):
     def _on_fetched(self, sub_id: str, content: str | None, error: str) -> None:
         self._manager.on_fetch_completed(sub_id, content, error)
         if error:
+            logger.error("获取订阅失败 subscription_id=%s error=%s", sub_id, error)
             self.errorOccurred.emit("获取失败", error)
 
     def _on_channels_changed(self) -> None:

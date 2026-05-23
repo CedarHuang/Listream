@@ -65,6 +65,7 @@ ApplicationWindow {
         property alias text: msgText.text
         modal: true
         standardButtons: Dialog.Ok
+        implicitWidth: Math.min(500, Math.max(200, msgText.implicitWidth + leftPadding + rightPadding))
         anchors.centerIn: parent
 
         background: Rectangle {

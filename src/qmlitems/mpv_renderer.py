@@ -1,8 +1,11 @@
 import ctypes
 import ctypes.wintypes
+import logging
 import os
 
 from PySide6.QtCore import Signal, Slot, QPointF
+
+logger = logging.getLogger(__name__)
 from PySide6.QtQuick import QQuickItem
 from PySide6.QtQml import QmlElement
 
@@ -41,6 +44,7 @@ class MpvRenderer(QQuickItem):
         try:
             import mpv
         except ImportError:
+            logger.error("mpv 库未安装")
             self.statusChanged.emit("error:mpv 库未安装")
             return
         try:
@@ -56,6 +60,7 @@ class MpvRenderer(QQuickItem):
             self._mpv.observe_property("pause", self._on_pause)
             self._mpv.observe_property("eof-reached", self._on_eof)
         except Exception as e:
+            logger.error("mpv 初始化失败: %s", e)
             self.statusChanged.emit(f"error:{e}")
 
     def itemChange(self, change, value):
@@ -84,6 +89,7 @@ class MpvRenderer(QQuickItem):
             time.sleep(0.1)
             hwnd = _find_mpv_window()
         if not hwnd:
+            logger.error("未找到 mpv 窗口")
             self.statusChanged.emit("error:未找到 mpv 窗口")
             return
         self._mpv_hwnd = hwnd
@@ -135,6 +141,7 @@ class MpvRenderer(QQuickItem):
     @Slot(str)
     def play(self, url: str) -> None:
         if self._mpv:
+            logger.info("mpv 播放 url=%s", url)
             self._mpv.play(url)
             self._ensure_visible()
             self.statusChanged.emit("loading")
@@ -142,6 +149,7 @@ class MpvRenderer(QQuickItem):
     @Slot()
     def stop(self) -> None:
         if self._mpv:
+            logger.info("mpv 停止")
             self._mpv.stop()
         self._ensure_hidden()
         self.statusChanged.emit("stopped")

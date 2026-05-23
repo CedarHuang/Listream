@@ -1,8 +1,11 @@
 import json
+import logging
 import os
 import shutil
 from pathlib import Path
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 
 def _appdata_dir() -> Path:
@@ -28,7 +31,10 @@ def load_json(path: Path) -> dict:
     try:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
+    except FileNotFoundError:
+        return {}
+    except json.JSONDecodeError:
+        logger.warning("JSON 解析失败 path=%s", path)
         return {}
 
 
