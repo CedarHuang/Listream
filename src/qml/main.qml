@@ -12,6 +12,13 @@ ApplicationWindow {
     visible: true
     color: "#1e1e2e"
     flags: Qt.Window | Qt.FramelessWindowHint
+    property bool sidebarCollapsed: false
+    property bool _sidebarBeforeFullscreen: false
+
+    onVisibilityChanged: {
+        if (visibility !== Window.FullScreen && _sidebarBeforeFullscreen !== sidebarCollapsed)
+            sidebarCollapsed = _sidebarBeforeFullscreen
+    }
 
     Shortcut { sequence: "Space"; onActivated: PlayerController.togglePause() }
     Shortcut { sequence: "Escape"; onActivated: PlayerController.stop() }
@@ -20,15 +27,14 @@ ApplicationWindow {
             var nr = AppBackend.getWindowRect()
             root.visibility = Window.Windowed
             if (Object.keys(nr).length > 0) {
-                root.width = nr.w
-                root.height = nr.h
-                root.x = nr.x
-                root.y = nr.y
+                root.width = nr.w; root.height = nr.h; root.x = nr.x; root.y = nr.y
             }
+            root.sidebarCollapsed = root._sidebarBeforeFullscreen
         } else {
-            if (root.visibility === Window.Windowed) {
+            if (root.visibility === Window.Windowed)
                 AppBackend.saveWindowRect(root.x, root.y, root.width, root.height)
-            }
+            root._sidebarBeforeFullscreen = root.sidebarCollapsed
+            root.sidebarCollapsed = true
             root.showFullScreen()
         }
     }}
@@ -43,12 +49,10 @@ ApplicationWindow {
             Layout.fillWidth: true
             Layout.fillHeight: true
 
-            property bool sidebarCollapsed: false
-
             Rectangle {
                 id: sidebar
                 anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
-                width: parent.sidebarCollapsed ? 0 : 300
+                width: root.sidebarCollapsed ? 0 : 300
                 color: "#181825"
                 clip: true
 
@@ -76,7 +80,7 @@ ApplicationWindow {
 
             Rectangle {
                 id: toggleBtn
-                property bool collapsed: parent.sidebarCollapsed
+                property bool collapsed: root.sidebarCollapsed
                 anchors {
                     left: parent.left
                     leftMargin: sidebar.width - 1
@@ -93,7 +97,7 @@ ApplicationWindow {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: parent.parent.sidebarCollapsed = !parent.parent.sidebarCollapsed
+                    onClicked: root.sidebarCollapsed = !root.sidebarCollapsed
                 }
 
                 Canvas {
@@ -124,47 +128,49 @@ ApplicationWindow {
     }
 
     Item {
+        id: resizeHandles
         anchors.fill: parent
+        enabled: root.visibility === Window.Windowed
 
         MouseArea {
             height: 4; anchors { left: parent.left; right: parent.right; top: parent.top }
-            cursorShape: Qt.SizeVerCursor
+            cursorShape: resizeHandles.enabled ? Qt.SizeVerCursor : Qt.ArrowCursor
             onPressed: root.startSystemResize(Qt.TopEdge)
         }
         MouseArea {
             height: 4; anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-            cursorShape: Qt.SizeVerCursor
+            cursorShape: resizeHandles.enabled ? Qt.SizeVerCursor : Qt.ArrowCursor
             onPressed: root.startSystemResize(Qt.BottomEdge)
         }
         MouseArea {
             width: 4; anchors { top: parent.top; bottom: parent.bottom; left: parent.left }
-            cursorShape: Qt.SizeHorCursor
+            cursorShape: resizeHandles.enabled ? Qt.SizeHorCursor : Qt.ArrowCursor
             onPressed: root.startSystemResize(Qt.LeftEdge)
         }
         MouseArea {
             width: 4; anchors { top: parent.top; bottom: parent.bottom; right: parent.right }
-            cursorShape: Qt.SizeHorCursor
+            cursorShape: resizeHandles.enabled ? Qt.SizeHorCursor : Qt.ArrowCursor
             onPressed: root.startSystemResize(Qt.RightEdge)
         }
-        // 四角 — 避开 TopBar 的鼠标区域
+        // 四角
         MouseArea {
             width: 8; height: 8; anchors { top: parent.top; left: parent.left }
-            cursorShape: Qt.SizeFDiagCursor
+            cursorShape: resizeHandles.enabled ? Qt.SizeFDiagCursor : Qt.ArrowCursor
             onPressed: root.startSystemResize(Qt.TopLeftCorner)
         }
         MouseArea {
             width: 8; height: 8; anchors { top: parent.top; right: parent.right }
-            cursorShape: Qt.SizeBDiagCursor
+            cursorShape: resizeHandles.enabled ? Qt.SizeBDiagCursor : Qt.ArrowCursor
             onPressed: root.startSystemResize(Qt.TopRightCorner)
         }
         MouseArea {
             width: 8; height: 8; anchors { bottom: parent.bottom; left: parent.left }
-            cursorShape: Qt.SizeBDiagCursor
+            cursorShape: resizeHandles.enabled ? Qt.SizeBDiagCursor : Qt.ArrowCursor
             onPressed: root.startSystemResize(Qt.BottomLeftCorner)
         }
         MouseArea {
             width: 8; height: 8; anchors { bottom: parent.bottom; right: parent.right }
-            cursorShape: Qt.SizeFDiagCursor
+            cursorShape: resizeHandles.enabled ? Qt.SizeFDiagCursor : Qt.ArrowCursor
             onPressed: root.startSystemResize(Qt.BottomRightCorner)
         }
     }

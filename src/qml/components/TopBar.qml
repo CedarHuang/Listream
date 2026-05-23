@@ -39,7 +39,13 @@ Rectangle {
         }
         onDoubleClicked: {
             var win = bar.Window.window
-            if (win.visibility === Window.Maximized || win.visibility === Window.FullScreen) {
+            if (win.visibility === Window.FullScreen) {
+                var nr = AppBackend.getWindowRect()
+                win.visibility = Window.Windowed
+                if (Object.keys(nr).length > 0) {
+                    win.width = nr.w; win.height = nr.h; win.x = nr.x; win.y = nr.y
+                }
+            } else if (win.visibility === Window.Maximized) {
                 win.visibility = Window.Windowed
             } else {
                 AppBackend.saveWindowRect(win.x, win.y, win.width, win.height)

@@ -80,10 +80,12 @@ Rectangle {
             var win = pane.Window.window
             if (win.visibility === Window.FullScreen) {
                 win.showNormal()
+                win.sidebarCollapsed = win._sidebarBeforeFullscreen
             } else {
-                if (win.visibility === Window.Windowed) {
+                if (win.visibility === Window.Windowed)
                     AppBackend.saveWindowRect(win.x, win.y, win.width, win.height)
-                }
+                win._sidebarBeforeFullscreen = win.sidebarCollapsed
+                win.sidebarCollapsed = true
                 win.showFullScreen()
             }
         }
