@@ -6,4 +6,5 @@ ChannelItem          1.0 ChannelItem.qml
 GroupHeader          1.0 GroupHeader.qml
 PlayerPane           1.0 PlayerPane.qml
 SubscriptionDialog   1.0 SubscriptionDialog.qml
+SettingsDialog       1.0 SettingsDialog.qml
 StatusBar            1.0 StatusBar.qml

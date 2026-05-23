@@ -3,8 +3,8 @@ import os
 import sys
 from pathlib import Path
 
-_SRC_DIR = str(Path(__file__).resolve().parent)
-os.environ["PATH"] = _SRC_DIR + os.pathsep + os.environ["PATH"]
+_SRC_DIR = Path(__file__).resolve().parent
+os.environ["PATH"] = str(_SRC_DIR / "libs") + os.pathsep + os.environ["PATH"]
 
 from PySide6.QtGui import QGuiApplication
 
