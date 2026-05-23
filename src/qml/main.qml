@@ -39,15 +39,22 @@ ApplicationWindow {
 
         TopBar { Layout.fillWidth: true }
 
-        RowLayout {
+        Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 1
+
+            property bool sidebarCollapsed: false
 
             Rectangle {
-                Layout.preferredWidth: 300
-                Layout.fillHeight: true
+                id: sidebar
+                anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+                width: parent.sidebarCollapsed ? 0 : 300
                 color: "#181825"
+                clip: true
+
+                Behavior on width {
+                    NumberAnimation { duration: 180; easing.type: Easing.InOutQuad }
+                }
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -58,7 +65,59 @@ ApplicationWindow {
                 }
             }
 
-            PlayerPane { Layout.fillWidth: true; Layout.fillHeight: true }
+            PlayerPane {
+                anchors {
+                    left: sidebar.right
+                    right: parent.right
+                    top: parent.top
+                    bottom: parent.bottom
+                }
+            }
+
+            Rectangle {
+                id: toggleBtn
+                property bool collapsed: parent.sidebarCollapsed
+                anchors {
+                    left: parent.left
+                    leftMargin: sidebar.width - 1
+                    verticalCenter: parent.verticalCenter
+                }
+                width: collapsed ? 22 : 24
+                height: 60
+                topLeftRadius: 0; bottomLeftRadius: 0
+                topRightRadius: 4; bottomRightRadius: 4
+                color: toggleMouse.containsMouse ? "#45475a" : "#313244"
+
+                MouseArea {
+                    id: toggleMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: parent.parent.sidebarCollapsed = !parent.parent.sidebarCollapsed
+                }
+
+                Canvas {
+                    id: arrowCanvas
+                    anchors.centerIn: parent
+                    width: 12; height: 12
+                    onPaint: {
+                        var ctx = getContext("2d")
+                        ctx.clearRect(0, 0, width, height)
+                        ctx.strokeStyle = "#a6adc8"; ctx.lineWidth = 1.5
+                        ctx.beginPath()
+                        if (toggleBtn.collapsed) {
+                            ctx.moveTo(6, 1); ctx.lineTo(2, 6); ctx.lineTo(6, 11)
+                        } else {
+                            ctx.moveTo(2, 1); ctx.lineTo(6, 6); ctx.lineTo(2, 11)
+                        }
+                        ctx.stroke()
+                    }
+                    Connections {
+                        target: toggleBtn
+                        function onCollapsedChanged() { arrowCanvas.requestPaint() }
+                    }
+                }
+            }
         }
 
         StatusBar { Layout.fillWidth: true }
