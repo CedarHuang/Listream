@@ -16,11 +16,19 @@ class PlayerController(QObject):
         self._title = ""
         self._status = "idle"
         self._renderer = None
+        self._proxy = {}
 
     def set_renderer(self, renderer) -> None:
         self._renderer = renderer
         if renderer is not None:
             renderer.statusChanged.connect(self._on_renderer_status)
+            if self._proxy:
+                renderer.configure_proxy(self._proxy)
+
+    def configure_proxy(self, proxy: dict) -> None:
+        self._proxy = proxy
+        if self._renderer:
+            self._renderer.configure_proxy(proxy)
 
     def _on_renderer_status(self, status: str) -> None:
         self._status = status

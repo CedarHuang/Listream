@@ -13,7 +13,7 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: true
         onClicked: {
-            ListView.view.currentIndex = index
+            if (ListView.view) ListView.view.currentIndex = index
             AppBackend.playChannel(url, name)
         }
     }

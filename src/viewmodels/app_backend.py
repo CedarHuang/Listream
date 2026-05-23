@@ -70,6 +70,7 @@ class AppBackend(QObject):
         proxy = load_proxy_config()
         if proxy:
             self._fetcher.configure_proxy(proxy)
+            self._player.configure_proxy(proxy)
 
     @Slot(str, str)
     def addSubscription(self, name: str, url: str) -> None:
@@ -120,6 +121,7 @@ class AppBackend(QObject):
         save_proxy_config(proxy)
         logger.info("代理配置已保存 enabled=%s type=%s host=%s port=%s", enabled, proxy_type, host, port)
         self._fetcher.configure_proxy(proxy)
+        self._player.configure_proxy(proxy)
 
     def _on_fetched(self, sub_id: str, content: str | None, error: str) -> None:
         self._manager.on_fetch_completed(sub_id, content, error)

@@ -38,6 +38,7 @@ class MpvRenderer(QQuickItem):
         self._parent_hwnd = 0
         self._scene_attached = False
         self._pending_url = ""
+        self._proxy = {}
 
     def componentComplete(self):
         super().componentComplete()
@@ -48,15 +49,17 @@ class MpvRenderer(QQuickItem):
             self.statusChanged.emit("error:mpv 库未安装")
             return
         try:
-            self._mpv = mpv.MPV(
-                vo="gpu",
-                hwdec="auto-safe",
-                keep_open="yes",
-                osc="no",
-                input_cursor="no",
-                input_default_bindings="no",
-                volume=80,
-            )
+            mpv_opts = {
+                "vo": "gpu",
+                "hwdec": "auto-safe",
+                "keep_open": "yes",
+                "osc": "no",
+                "input_cursor": "no",
+                "input_default_bindings": "no",
+                "volume": 80,
+            }
+            self._apply_proxy_opts(mpv_opts)
+            self._mpv = mpv.MPV(**mpv_opts)
             self._mpv.observe_property("pause", self._on_pause)
             self._mpv.observe_property("eof-reached", self._on_eof)
         except Exception as e:
@@ -163,6 +166,20 @@ class MpvRenderer(QQuickItem):
     def setVolume(self, vol: float) -> None:
         if self._mpv:
             self._mpv.volume = int(vol * 100)
+
+    def configure_proxy(self, proxy: dict) -> None:
+        self._proxy = proxy
+        if self._mpv:
+            if proxy.get("enabled") and proxy.get("type") == "http":
+                url = f"http://{proxy['host']}:{proxy['port']}"
+                self._mpv["http-proxy"] = url
+                logger.info("mpv 代理已设置 %s", url)
+            else:
+                self._mpv["http-proxy"] = ""
+
+    def _apply_proxy_opts(self, opts: dict) -> None:
+        if self._proxy.get("enabled") and self._proxy.get("type") == "http":
+            opts["http-proxy"] = f"http://{self._proxy['host']}:{self._proxy['port']}"
 
 
 def _find_mpv_window() -> int:
