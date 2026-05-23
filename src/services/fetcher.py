@@ -54,11 +54,15 @@ class Fetcher(QObject):
                 raw = bytes(reply.readAll()).decode("utf-8", errors="replace")
                 logger.info("抓取成功 subscription_id=%s size=%d", subscription_id, len(raw))
                 self.fetched.emit(subscription_id, raw, "")
+            reply.deleteLater()
+            timer.deleteLater()
 
         def on_timeout():
             logger.warning("抓取超时 subscription_id=%s", subscription_id)
             reply.abort()
             self.fetched.emit(subscription_id, None, "请求超时")
+            reply.deleteLater()
+            timer.deleteLater()
 
         timer.timeout.connect(on_timeout)
         reply.finished.connect(on_finished)
