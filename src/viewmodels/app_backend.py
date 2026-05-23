@@ -1,6 +1,7 @@
 import logging
 
 from PySide6.QtCore import Property, QObject, Signal, Slot
+from PySide6.QtGui import QCursor
 
 from ..services.subscription_manager import SubscriptionManager
 from ..services.fetcher import Fetcher
@@ -107,6 +108,19 @@ class AppBackend(QObject):
     def playChannel(self, url: str, name: str) -> None:
         save_last_channel(url, name)
         self._player.play(url, name)
+
+    @Slot(float, float, float, float)
+    def saveWindowRect(self, x: float, y: float, w: float, h: float) -> None:
+        self._windowRect = {"x": x, "y": y, "w": w, "h": h}
+
+    @Slot(result="QVariantMap")
+    def getCursorPos(self) -> dict:
+        pos = QCursor.pos()
+        return {"x": pos.x(), "y": pos.y()}
+
+    @Slot(result="QVariantMap")
+    def getWindowRect(self) -> dict:
+        return self._windowRect if hasattr(self, "_windowRect") else {}
 
     @Slot(QObject)
     def setRenderer(self, renderer: QObject) -> None:

@@ -11,12 +11,26 @@ ApplicationWindow {
     title: "Listream"
     visible: true
     color: "#1e1e2e"
+    flags: Qt.Window | Qt.FramelessWindowHint
 
     Shortcut { sequence: "Space"; onActivated: PlayerController.togglePause() }
     Shortcut { sequence: "Escape"; onActivated: PlayerController.stop() }
     Shortcut { sequence: "F"; onActivated: {
-        if (root.visibility === Window.FullScreen) root.showNormal()
-        else root.showFullScreen()
+        if (root.visibility === Window.FullScreen) {
+            var nr = AppBackend.getWindowRect()
+            root.visibility = Window.Windowed
+            if (Object.keys(nr).length > 0) {
+                root.width = nr.w
+                root.height = nr.h
+                root.x = nr.x
+                root.y = nr.y
+            }
+        } else {
+            if (root.visibility === Window.Windowed) {
+                AppBackend.saveWindowRect(root.x, root.y, root.width, root.height)
+            }
+            root.showFullScreen()
+        }
     }}
 
     ColumnLayout {

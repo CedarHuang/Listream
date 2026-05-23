@@ -72,6 +72,9 @@ Rectangle {
             if (win.visibility === Window.FullScreen) {
                 win.showNormal()
             } else {
+                if (win.visibility === Window.Windowed) {
+                    AppBackend.saveWindowRect(win.x, win.y, win.width, win.height)
+                }
                 win.showFullScreen()
             }
         }
