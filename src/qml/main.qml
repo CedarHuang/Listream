@@ -14,29 +14,44 @@ ApplicationWindow {
     flags: Qt.Window | Qt.FramelessWindowHint
     property bool sidebarCollapsed: false
     property bool _sidebarBeforeFullscreen: false
+    property bool _skipAnim: false
+
+    Timer { id: animTimer; interval: 0; onTriggered: root._skipAnim = false }
+
+    function enterFullscreen() {
+        if (root.visibility === Window.Windowed)
+            AppBackend.saveWindowRect(root.x, root.y, root.width, root.height)
+        root._skipAnim = true
+        root._sidebarBeforeFullscreen = root.sidebarCollapsed
+        root.sidebarCollapsed = true
+        root.showFullScreen()
+        animTimer.start()
+    }
+
+    function exitFullscreen() {
+        var nr = AppBackend.getWindowRect()
+        root.visibility = Window.Windowed
+        if (Object.keys(nr).length > 0) {
+            root.width = nr.w; root.height = nr.h; root.x = nr.x; root.y = nr.y
+        }
+    }
 
     onVisibilityChanged: {
-        if (visibility !== Window.FullScreen && _sidebarBeforeFullscreen !== sidebarCollapsed)
+        if (visibility !== Window.FullScreen && _sidebarBeforeFullscreen !== sidebarCollapsed) {
+            root._skipAnim = true
             sidebarCollapsed = _sidebarBeforeFullscreen
+            animTimer.start()
+        }
     }
 
     Shortcut { sequence: "Space"; onActivated: PlayerController.togglePause() }
-    Shortcut { sequence: "Escape"; onActivated: PlayerController.stop() }
+    Shortcut { sequence: "Escape"; onActivated: { if (root.visibility === Window.FullScreen) root.exitFullscreen() }}
+    Shortcut { sequence: "Tab"; onActivated: root.sidebarCollapsed = !root.sidebarCollapsed }
     Shortcut { sequence: "F"; onActivated: {
-        if (root.visibility === Window.FullScreen) {
-            var nr = AppBackend.getWindowRect()
-            root.visibility = Window.Windowed
-            if (Object.keys(nr).length > 0) {
-                root.width = nr.w; root.height = nr.h; root.x = nr.x; root.y = nr.y
-            }
-            root.sidebarCollapsed = root._sidebarBeforeFullscreen
-        } else {
-            if (root.visibility === Window.Windowed)
-                AppBackend.saveWindowRect(root.x, root.y, root.width, root.height)
-            root._sidebarBeforeFullscreen = root.sidebarCollapsed
-            root.sidebarCollapsed = true
-            root.showFullScreen()
-        }
+        if (root.visibility === Window.FullScreen)
+            root.exitFullscreen()
+        else
+            root.enterFullscreen()
     }}
 
     ColumnLayout {
@@ -57,6 +72,7 @@ ApplicationWindow {
                 clip: true
 
                 Behavior on width {
+                    enabled: !root._skipAnim
                     NumberAnimation { duration: 180; easing.type: Easing.InOutQuad }
                 }
 

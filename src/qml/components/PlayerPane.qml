@@ -78,16 +78,10 @@ Rectangle {
         enabled: PlayerController.status === "playing" || PlayerController.status === "paused"
         onDoubleClicked: {
             var win = pane.Window.window
-            if (win.visibility === Window.FullScreen) {
-                win.showNormal()
-                win.sidebarCollapsed = win._sidebarBeforeFullscreen
-            } else {
-                if (win.visibility === Window.Windowed)
-                    AppBackend.saveWindowRect(win.x, win.y, win.width, win.height)
-                win._sidebarBeforeFullscreen = win.sidebarCollapsed
-                win.sidebarCollapsed = true
-                win.showFullScreen()
-            }
+            if (win.visibility === Window.FullScreen)
+                win.exitFullscreen()
+            else
+                win.enterFullscreen()
         }
     }
 }
