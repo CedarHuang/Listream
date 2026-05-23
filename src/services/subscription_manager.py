@@ -139,7 +139,6 @@ class SubscriptionManager:
             cached = load_channel_cache(s.id)
             if cached:
                 all_ch.extend(Channel.from_dict(d) for d in cached)
-        all_ch.sort(key=lambda c: (c.group, c.name))
         self._all_channels = all_ch
         if self._on_channels_changed:
             self._on_channels_changed()

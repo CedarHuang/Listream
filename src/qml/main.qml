@@ -80,9 +80,4 @@ ApplicationWindow {
         }
     }
 
-    Component.onCompleted: {
-        if (AppBackend.lastChannelUrl) {
-            AppBackend.playChannel(AppBackend.lastChannelUrl, AppBackend.lastChannelName)
-        }
-    }
 }
