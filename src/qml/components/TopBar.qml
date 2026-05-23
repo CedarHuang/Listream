@@ -86,10 +86,11 @@ Rectangle {
         }
 
         Button {
-            text: "全部刷新"
+            text: AppBackend.busy ? "刷新中..." : "全部刷新"
             flat: true
             font.pixelSize: 13
-            palette.buttonText: "#cdd6f4"
+            palette.buttonText: AppBackend.busy ? "#6c7086" : "#cdd6f4"
+            enabled: !AppBackend.busy
             onClicked: AppBackend.refreshAll()
         }
 
@@ -113,21 +114,39 @@ Rectangle {
     Row {
         anchors.verticalCenter: parent.verticalCenter
         anchors.right: parent.right
-        anchors.rightMargin: 4
+        anchors.rightMargin: 0
         spacing: 0
 
         Button {
-            text: "—"
+            id: minBtn
+            width: 46; height: 32
+            hoverEnabled: true
             flat: true
-            font.pixelSize: 13
-            palette.buttonText: "#cdd6f4"
+            padding: 0
+            background: Rectangle { color: minBtn.hovered ? "#45475a" : "transparent" }
             onClicked: bar.Window.window.showMinimized()
+            contentItem: Item {
+                Canvas {
+                    anchors.centerIn: parent
+                    width: 12; height: 12
+                    onPaint: {
+                        var ctx = getContext("2d")
+                        ctx.strokeStyle = "#cdd6f4"; ctx.lineWidth = 1.3
+                        ctx.beginPath()
+                        ctx.moveTo(2, 10); ctx.lineTo(10, 10)
+                        ctx.stroke()
+                    }
+                }
+            }
         }
+
         Button {
-            text: "□"
+            id: maxBtn
+            width: 46; height: 32
+            hoverEnabled: true
             flat: true
-            font.pixelSize: 13
-            palette.buttonText: "#cdd6f4"
+            padding: 0
+            background: Rectangle { color: maxBtn.hovered ? "#45475a" : "transparent" }
             onClicked: {
                 var win = bar.Window.window
                 if (win.visibility === Window.Maximized) win.showNormal()
@@ -136,13 +155,43 @@ Rectangle {
                     win.showMaximized()
                 }
             }
+            contentItem: Item {
+                Canvas {
+                    anchors.centerIn: parent
+                    width: 12; height: 12
+                    onPaint: {
+                        var ctx = getContext("2d")
+                        ctx.strokeStyle = "#cdd6f4"; ctx.lineWidth = 1.3
+                        ctx.beginPath()
+                        ctx.rect(2, 3, 8, 7)
+                        ctx.stroke()
+                    }
+                }
+            }
         }
+
         Button {
-            text: "✕"
+            id: closeBtn
+            width: 46; height: 32
+            hoverEnabled: true
             flat: true
-            font.pixelSize: 13
-            palette.buttonText: "#cdd6f4"
+            padding: 0
+            background: Rectangle { color: closeBtn.hovered ? "#e64553" : "transparent" }
             onClicked: bar.Window.window.close()
+            contentItem: Item {
+                Canvas {
+                    anchors.centerIn: parent
+                    width: 12; height: 12
+                    onPaint: {
+                        var ctx = getContext("2d")
+                        ctx.strokeStyle = closeBtn.hovered ? "#ffffff" : "#cdd6f4"; ctx.lineWidth = 1.3
+                        ctx.beginPath()
+                        ctx.moveTo(2, 2); ctx.lineTo(10, 10)
+                        ctx.moveTo(10, 2); ctx.lineTo(2, 10)
+                        ctx.stroke()
+                    }
+                }
+            }
         }
     }
 

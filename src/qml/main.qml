@@ -64,6 +64,52 @@ ApplicationWindow {
         StatusBar { Layout.fillWidth: true }
     }
 
+    Item {
+        anchors.fill: parent
+
+        MouseArea {
+            height: 4; anchors { left: parent.left; right: parent.right; top: parent.top }
+            cursorShape: Qt.SizeVerCursor
+            onPressed: root.startSystemResize(Qt.TopEdge)
+        }
+        MouseArea {
+            height: 4; anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+            cursorShape: Qt.SizeVerCursor
+            onPressed: root.startSystemResize(Qt.BottomEdge)
+        }
+        MouseArea {
+            width: 4; anchors { top: parent.top; bottom: parent.bottom; left: parent.left }
+            cursorShape: Qt.SizeHorCursor
+            onPressed: root.startSystemResize(Qt.LeftEdge)
+        }
+        MouseArea {
+            width: 4; anchors { top: parent.top; bottom: parent.bottom; right: parent.right }
+            cursorShape: Qt.SizeHorCursor
+            onPressed: root.startSystemResize(Qt.RightEdge)
+        }
+        // 四角 — 避开 TopBar 的鼠标区域
+        MouseArea {
+            width: 8; height: 8; anchors { top: parent.top; left: parent.left }
+            cursorShape: Qt.SizeFDiagCursor
+            onPressed: root.startSystemResize(Qt.TopLeftCorner)
+        }
+        MouseArea {
+            width: 8; height: 8; anchors { top: parent.top; right: parent.right }
+            cursorShape: Qt.SizeBDiagCursor
+            onPressed: root.startSystemResize(Qt.TopRightCorner)
+        }
+        MouseArea {
+            width: 8; height: 8; anchors { bottom: parent.bottom; left: parent.left }
+            cursorShape: Qt.SizeBDiagCursor
+            onPressed: root.startSystemResize(Qt.BottomLeftCorner)
+        }
+        MouseArea {
+            width: 8; height: 8; anchors { bottom: parent.bottom; right: parent.right }
+            cursorShape: Qt.SizeFDiagCursor
+            onPressed: root.startSystemResize(Qt.BottomRightCorner)
+        }
+    }
+
     Connections {
         target: AppBackend
         function onErrorOccurred(title, message) {

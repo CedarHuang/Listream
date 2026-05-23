@@ -18,19 +18,21 @@ Rectangle {
     Row {
         anchors.verticalCenter: parent.verticalCenter
         anchors.left: parent.left
-        anchors.leftMargin: 28
+        anchors.leftMargin: 12
         spacing: 10
 
-        Image {
-            anchors.verticalCenter: parent.verticalCenter
+        Item {
             width: 24; height: 24
-            source: logo || ""
-            sourceSize.width: 24
-            fillMode: Image.PreserveAspectFit
-            onStatusChanged: {
-                if (status === Image.Error) visible = false
+            anchors.verticalCenter: parent.verticalCenter
+
+            Image {
+                anchors.centerIn: parent
+                width: 24; height: 24
+                source: logo || ""
+                sourceSize.width: 24
+                fillMode: Image.PreserveAspectFit
+                visible: logo !== "" && status !== Image.Error
             }
-            visible: logo !== ""
         }
 
         Text {

@@ -23,6 +23,7 @@ class AppBackend(QObject):
     subscriptionsChanged = Signal()
     errorOccurred = Signal(str, str)
     lastChannelChanged = Signal()
+    busyChanged = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -36,6 +37,23 @@ class AppBackend(QObject):
         self._manager = SubscriptionManager(self._fetcher)
         self._manager.set_on_channels_changed(self._on_channels_changed)
         self._last_channel = load_last_channel()
+        self._busy_count = 0
+
+    @Property(bool, notify=busyChanged)
+    def busy(self) -> bool:
+        return self._busy_count > 0
+
+    def _inc_busy(self, n: int = 1) -> None:
+        was = self._busy_count > 0
+        self._busy_count += n
+        if not was:
+            self.busyChanged.emit()
+
+    def _dec_busy(self) -> None:
+        if self._busy_count > 0:
+            self._busy_count -= 1
+            if self._busy_count == 0:
+                self.busyChanged.emit()
 
     @property
     def channelModel(self):
@@ -82,6 +100,7 @@ class AppBackend(QObject):
     @Slot(str, str)
     def addSubscription(self, name: str, url: str) -> None:
         logger.info("添加订阅 name=%s url=%s", name, url)
+        self._inc_busy()
         self._manager.add(name, url)
         self._sub_model.replace_all(self._manager.subscriptions)
 
@@ -103,10 +122,14 @@ class AppBackend(QObject):
 
     @Slot(str)
     def refreshSubscription(self, sub_id: str) -> None:
+        self._inc_busy()
         self._manager.refresh(sub_id)
 
     @Slot()
     def refreshAll(self) -> None:
+        n = sum(1 for s in self._manager.subscriptions if s.enabled)
+        if n > 0:
+            self._inc_busy(n)
         self._manager.refresh_all()
 
     @Slot(str, str)
@@ -145,6 +168,7 @@ class AppBackend(QObject):
 
     def _on_fetched(self, sub_id: str, content: str | None, error: str) -> None:
         self._manager.on_fetch_completed(sub_id, content, error)
+        self._dec_busy()
         if error:
             logger.error("获取订阅失败 subscription_id=%s error=%s", sub_id, error)
             self.errorOccurred.emit("获取失败", error)

@@ -51,15 +51,24 @@ Rectangle {
 
     Rectangle {
         anchors.centerIn: parent
-        width: 200; height: 60
-        radius: 8
+        width: 100; height: 100
+        radius: 12
         color: "#313244"
         visible: PlayerController.status === "loading"
 
-        Row {
+        Column {
             anchors.centerIn: parent
-            spacing: 10
-            Text { text: "加载中..."; color: "#cdd6f4"; font.pixelSize: 14 }
+            spacing: 12
+            BusyIndicator {
+                anchors.horizontalCenter: parent.horizontalCenter
+                palette.dark: "#89b4fa"
+            }
+            Text {
+                text: "加载中..."
+                color: "#a6adc8"
+                font.pixelSize: 13
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
         }
     }
 

@@ -1,4 +1,4 @@
-from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt, QSortFilterProxyModel, Slot
+from PySide6.QtCore import Property, QAbstractListModel, QModelIndex, Qt, QSortFilterProxyModel, Signal, Slot
 
 from ..models.channel import Channel
 
@@ -59,10 +59,21 @@ class ChannelListModel(QAbstractListModel):
 
 
 class ChannelFilterModel(QSortFilterProxyModel):
+    filteredCountChanged = Signal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self._filter_text = ""
         self.setDynamicSortFilter(True)
+
+    @Property(int, notify=filteredCountChanged)
+    def filteredCount(self):
+        return self.rowCount()
+
+    @Property(int, notify=filteredCountChanged)
+    def totalCount(self):
+        m = self.sourceModel()
+        return m.rowCount() if m else 0
 
     def filterAcceptsRow(self, source_row, source_parent):
         if not self._filter_text:
@@ -74,9 +85,11 @@ class ChannelFilterModel(QSortFilterProxyModel):
         needle = self._filter_text.lower()
         return needle in name or needle in group
 
+    @Slot(str)
     def setFilterText(self, text: str) -> None:
         self._filter_text = text
         self.invalidateFilter()
+        self.filteredCountChanged.emit()
 
     @Slot(int, result=str)
     def getUrl(self, row: int) -> str:
