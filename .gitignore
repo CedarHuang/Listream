@@ -222,3 +222,6 @@ src/libs/libmpv-2.dll
 
 # Qt resource compiler output
 *_rc.py
+
+# Generated icon
+src/assets/icon.ico

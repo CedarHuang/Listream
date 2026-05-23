@@ -16,12 +16,16 @@ import urllib.request
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+sys.stdout.reconfigure(encoding="utf-8")
+
 ROOT = Path(__file__).resolve().parent
 SRC = ROOT / "src"
 QRC = SRC / "resources.qrc"
 QRC_OUT = SRC / "resources_rc.py"
 DLL_DIR = SRC / "libs"
 DLL = DLL_DIR / "libmpv-2.dll"
+ICON_SVG = SRC / "assets" / "icon.svg"
+ICON_ICO = SRC / "assets" / "icon.ico"
 
 MPV_REPO = "shinchiro/mpv-winbuild-cmake"
 MPV_API = f"https://api.github.com/repos/{MPV_REPO}/releases/latest"
@@ -115,6 +119,54 @@ def _excluded_qml_dirs() -> list[str]:
     derived = {qml_dir for _, qml_dir in _EXCLUDED_MODULES if qml_dir is not None}
     derived.update(_EXCLUDED_QML_DIRS_EXTRA)
     return sorted(derived)
+
+
+# ---------------------------------------------------------------------------
+# 图标生成
+# ---------------------------------------------------------------------------
+
+def compile_icon() -> None:
+    """将 icon.svg 转换为 icon.ico（多尺寸）。"""
+    if ICON_ICO.is_file() and ICON_ICO.stat().st_mtime >= ICON_SVG.stat().st_mtime:
+        print(f"[icon] 已存在: {ICON_ICO.relative_to(ROOT)}")
+        return
+
+    print(f"[icon] 生成 {ICON_ICO.name} ...")
+    from tempfile import TemporaryDirectory
+
+    from PySide6.QtCore import QSize, Qt
+    from PySide6.QtGui import QGuiApplication, QImage, QPainter
+    from PySide6.QtSvg import QSvgRenderer
+
+    from PIL import Image as PILImage
+
+    app = QGuiApplication.instance()
+    if app is None:
+        app = QGuiApplication(["--platform", "offscreen"])
+
+    renderer = QSvgRenderer(str(ICON_SVG))
+    sizes = [256, 128, 64, 48, 32, 24, 16]
+    pil_images = []
+
+    with TemporaryDirectory() as tmp:
+        for s in sizes:
+            img = QImage(QSize(s, s), QImage.Format_ARGB32)
+            img.fill(Qt.GlobalColor.transparent)
+            painter = QPainter(img)
+            painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+            renderer.render(painter)
+            painter.end()
+            png = Path(tmp) / f"icon_{s}.png"
+            img.save(str(png), "PNG")
+            with PILImage.open(png) as f:
+                pil_images.append(f.copy())
+
+    pil_images[0].save(
+        str(ICON_ICO), format="ICO",
+        sizes=[(p.width, p.height) for p in pil_images],
+        append_images=pil_images[1:],
+    )
+    print(f"  -> {ICON_ICO.relative_to(ROOT)}")
 
 
 # ---------------------------------------------------------------------------
@@ -247,6 +299,7 @@ def package(*, clean: bool = False) -> None:
         "pyinstaller", "--windowed", "--noconfirm",
         "--name", name,
         "--add-data", f"{DLL};.",
+        "--icon", str(ICON_ICO),
     ]
     if clean:
         cmd.append("--clean")
@@ -327,6 +380,7 @@ def main() -> None:
     parser.add_argument("--clean", action="store_true", help="打包前清理 PyInstaller 缓存")
     args = parser.parse_args()
 
+    compile_icon()
     compile_qrc()
     ensure_dll()
 
