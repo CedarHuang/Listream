@@ -53,6 +53,13 @@ Rectangle {
             from: 0; to: 100
             value: PlayerController.volume * 100
             onValueChanged: PlayerController.volume = value / 100
+            onPressedChanged: if (!pressed) PlayerController.save_volume()
+
+            ToolTip {
+                parent: volSlider.handle
+                visible: volSlider.pressed
+                text: Math.round(volSlider.value)
+            }
         }
     }
 }

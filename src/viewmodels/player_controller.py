@@ -2,6 +2,8 @@ import logging
 
 from PySide6.QtCore import QObject, Signal, Slot, Property
 
+from ..services import storage
+
 logger = logging.getLogger(__name__)
 
 
@@ -13,7 +15,7 @@ class PlayerController(QObject):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._volume = 0.8
+        self._volume = storage.load_volume() / 100.0
         self._title = ""
         self._url = ""
         self._status = "idle"
@@ -49,6 +51,10 @@ class PlayerController(QObject):
             self.volumeChanged.emit()
             if self._renderer:
                 self._renderer.setVolume(v)
+
+    @Slot()
+    def save_volume(self) -> None:
+        storage.save_volume(round(self._volume * 100))
 
     @Property(str, notify=titleChanged)
     def title(self) -> str:

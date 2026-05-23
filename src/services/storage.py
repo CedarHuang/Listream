@@ -73,6 +73,18 @@ def delete_channel_cache(subscription_id: str) -> None:
         pass
 
 
+def load_volume() -> int:
+    data = load_config()
+    v = data.get("volume")
+    return int(v) if isinstance(v, (int, float)) else 80
+
+
+def save_volume(vol: int) -> None:
+    data = load_config()
+    data["volume"] = vol
+    save_config(data)
+
+
 def load_proxy_config() -> dict:
     """返回 proxy 配置字典 {enabled, type, host, port}，无配置时返回空。"""
     data = load_config()
