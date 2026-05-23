@@ -1,0 +1,16 @@
+<RCC>
+  <qresource prefix="/">
+    <file>qml/main.qml</file>
+    <file>qml/components/qmldir</file>
+    <file>qml/components/TopBar.qml</file>
+    <file>qml/components/SearchBar.qml</file>
+    <file>qml/components/ChannelList.qml</file>
+    <file>qml/components/ChannelItem.qml</file>
+    <file>qml/components/GroupHeader.qml</file>
+    <file>qml/components/PlayerPane.qml</file>
+    <file>qml/components/SubscriptionDialog.qml</file>
+    <file>qml/components/SettingsDialog.qml</file>
+    <file>qml/components/StatusBar.qml</file>
+    <file>assets/icon.svg</file>
+  </qresource>
+</RCC>

@@ -54,6 +54,29 @@ Rectangle {
         anchors.leftMargin: 12
         spacing: 8
 
+        Image {
+            anchors.verticalCenter: parent.verticalCenter
+            source: "qrc:/assets/icon.svg"
+            sourceSize.width: 20
+            sourceSize.height: 20
+            width: 20
+            height: 20
+        }
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: "Listream"
+            color: "#cdd6f4"
+            font.pixelSize: 14
+            font.bold: true
+        }
+
+        Rectangle {
+            anchors.verticalCenter: parent.verticalCenter
+            width: 1; height: 16
+            color: "#45475a"
+        }
+
         Button {
             text: "订阅管理"
             flat: true

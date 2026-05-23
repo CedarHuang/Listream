@@ -1,13 +1,12 @@
 import logging
-from pathlib import Path
 
 from PySide6.QtQuick import QQuickWindow, QSGRendererInterface
 from PySide6.QtQuickControls2 import QQuickStyle
 from PySide6.QtQml import QQmlApplicationEngine, qmlRegisterSingletonType
 
-logger = logging.getLogger(__name__)
+from . import resources_rc  # noqa: F401 注册 .qrc 编译的资源
 
-QML_DIR = Path(__file__).resolve().parent / "qml"
+logger = logging.getLogger(__name__)
 
 
 def create_engine() -> QQmlApplicationEngine:
@@ -40,9 +39,9 @@ def create_engine() -> QQmlApplicationEngine:
     )
 
     engine = QQmlApplicationEngine()
-    engine.addImportPath(str(QML_DIR))
+    engine.addImportPath("qrc:/qml")
     QQuickStyle.setStyle("Fusion")
-    engine.load(str(QML_DIR / "main.qml"))
+    engine.load("qrc:/qml/main.qml")
     if not engine.rootObjects():
         logger.error("QML 加载失败，无法创建窗口")
         import sys
