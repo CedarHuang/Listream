@@ -67,6 +67,13 @@ Rectangle {
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton
         enabled: PlayerController.status === "playing" || PlayerController.status === "paused"
-        onClicked: PlayerController.togglePause()
+        onDoubleClicked: {
+            var win = pane.Window.window
+            if (win.visibility === Window.FullScreen) {
+                win.showNormal()
+            } else {
+                win.showFullScreen()
+            }
+        }
     }
 }
