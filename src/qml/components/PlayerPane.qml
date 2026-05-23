@@ -66,10 +66,7 @@ Rectangle {
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton
-        onClicked: {
-            if (PlayerController.status === "playing" || PlayerController.status === "paused") {
-                PlayerController.togglePause()
-            }
-        }
+        enabled: PlayerController.status === "playing" || PlayerController.status === "paused"
+        onClicked: PlayerController.togglePause()
     }
 }

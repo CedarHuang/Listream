@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +90,18 @@ class SubscriptionManager:
                 self._schedule_fetch(s)
 
     def startup_refresh(self) -> None:
-        self._trigger_refresh_all()
+        threshold = datetime.now(timezone.utc) - timedelta(hours=12)
+        for s in self._subscriptions:
+            if not s.enabled:
+                continue
+            if s.last_updated:
+                try:
+                    last = datetime.fromisoformat(s.last_updated)
+                    if last > threshold:
+                        continue
+                except ValueError:
+                    pass
+            self._schedule_fetch(s)
 
     def _schedule_fetch(self, sub: Subscription) -> None:
         if self._fetcher is None:
@@ -137,8 +148,3 @@ class SubscriptionManager:
         data = load_config()
         data["subscriptions"] = [s.to_dict() for s in self._subscriptions]
         save_config(data)
-
-    def _trigger_refresh_all(self) -> None:
-        for s in self._subscriptions:
-            if s.enabled:
-                self._schedule_fetch(s)

@@ -55,17 +55,14 @@ class MpvRenderer(QQuickFramebufferObject):
     def _wait_playing(self, attempts: int) -> None:
         if not self._mpv:
             return
-        if attempts < 6:
-            QTimer.singleShot(200, lambda: self._wait_playing(attempts + 1))
-            return
         try:
             if self._mpv.playback_time is not None:
                 self.statusChanged.emit("playing")
                 return
         except Exception:
             pass
-        if attempts < 30:
-            QTimer.singleShot(200, lambda: self._wait_playing(attempts + 1))
+        if attempts < 120:
+            QTimer.singleShot(100, lambda: self._wait_playing(attempts + 1))
         else:
             if not self._mpv.pause:
                 self.statusChanged.emit("playing")

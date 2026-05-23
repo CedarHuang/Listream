@@ -18,13 +18,6 @@ ListView {
         width: listView.width
     }
 
-    highlight: Rectangle {
-        color: "#45475a"
-        radius: 4
-    }
-
-    highlightMoveDuration: 80
-
     ScrollBar.vertical: ScrollBar {
         policy: ScrollBar.AsNeeded
     }

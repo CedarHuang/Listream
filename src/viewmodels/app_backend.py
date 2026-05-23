@@ -1,6 +1,6 @@
 import logging
 
-from PySide6.QtCore import QObject, Signal, Slot
+from PySide6.QtCore import Property, QObject, Signal, Slot
 
 from ..services.subscription_manager import SubscriptionManager
 from ..services.fetcher import Fetcher
@@ -21,6 +21,7 @@ class AppBackend(QObject):
     channelsChanged = Signal()
     subscriptionsChanged = Signal()
     errorOccurred = Signal(str, str)
+    lastChannelChanged = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -47,13 +48,13 @@ class AppBackend(QObject):
     def player(self) -> PlayerController:
         return self._player
 
-    @property
+    @Property(str, notify=lastChannelChanged)
     def lastChannelUrl(self) -> str:
         if self._last_channel:
             return self._last_channel.get("url", "")
         return ""
 
-    @property
+    @Property(str, notify=lastChannelChanged)
     def lastChannelName(self) -> str:
         if self._last_channel:
             return self._last_channel.get("name", "")

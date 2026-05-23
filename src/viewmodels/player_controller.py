@@ -9,11 +9,13 @@ class PlayerController(QObject):
     volumeChanged = Signal()
     titleChanged = Signal()
     statusChanged = Signal(str)
+    urlChanged = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._volume = 0.8
         self._title = ""
+        self._url = ""
         self._status = "idle"
         self._renderer = None
         self._proxy = {}
@@ -52,17 +54,25 @@ class PlayerController(QObject):
     def title(self) -> str:
         return self._title
 
+    @Property(str, notify=urlChanged)
+    def currentUrl(self) -> str:
+        return self._url
+
     @Slot(str, str)
     def play(self, url: str, title: str) -> None:
         logger.info("播放 title=%s", title)
         self._title = title
+        self._url = url
         self.titleChanged.emit()
+        self.urlChanged.emit()
         if self._renderer:
             self._renderer.play(url)
 
     @Slot()
     def stop(self) -> None:
         logger.info("停止播放")
+        self._url = ""
+        self.urlChanged.emit()
         if self._renderer:
             self._renderer.stop()
 

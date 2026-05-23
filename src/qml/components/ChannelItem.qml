@@ -6,16 +6,13 @@ Rectangle {
     id: item
     height: 40
     color: itemArea.containsMouse ? "#313244" : "transparent"
-    property bool isCurrent: ListView.view.currentIndex === index
+    property bool isCurrent: url !== "" && url === PlayerController.currentUrl
 
     MouseArea {
         id: itemArea
         anchors.fill: parent
         hoverEnabled: true
-        onClicked: {
-            if (ListView.view) ListView.view.currentIndex = index
-            AppBackend.playChannel(url, name)
-        }
+        onClicked: AppBackend.playChannel(url, name)
     }
 
     Row {
