@@ -83,6 +83,16 @@ class AppBackend(QObject):
         self._manager.remove(sub_id)
         self._sub_model.replace_all(self._manager.subscriptions)
 
+    @Slot(str, str, str)
+    def updateSubscription(self, sub_id: str, name: str, url: str) -> None:
+        self._manager.update(sub_id, name, url)
+        self._sub_model.replace_all(self._manager.subscriptions)
+
+    @Slot(str, bool)
+    def setSubscriptionEnabled(self, sub_id: str, enabled: bool) -> None:
+        self._manager.set_enabled(sub_id, enabled)
+        self._sub_model.replace_all(self._manager.subscriptions)
+
     @Slot(str)
     def refreshSubscription(self, sub_id: str) -> None:
         self._manager.refresh(sub_id)

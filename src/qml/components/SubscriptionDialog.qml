@@ -8,8 +8,8 @@ Dialog {
     title: "订阅管理"
     modal: true
     standardButtons: Dialog.Close
-    width: 500
-    height: 400
+    width: 600
+    height: 450
 
     background: Rectangle {
         color: "#1e1e2e"
@@ -70,43 +70,114 @@ Dialog {
             model: SubscriptionListModel
 
             delegate: Rectangle {
+                id: row
                 width: subListView.width
                 height: 36
                 color: index % 2 === 0 ? "#1e1e2e" : "#181825"
+                property bool editing: false
 
                 RowLayout {
                     anchors.fill: parent
                     anchors.margins: 4
+                    spacing: 4
 
+                    Switch {
+                        id: enabledSwitch
+                        checked: model.enabled !== undefined ? model.enabled : true
+                        palette.button: "#45475a"
+                        Layout.preferredWidth: 40
+                        onToggled: AppBackend.setSubscriptionEnabled(model.subId, checked)
+                    }
+
+                    // 显示模式
                     Text {
-                        Layout.preferredWidth: 100
-                        text: subName
-                        color: "#cdd6f4"
+                        visible: !row.editing
+                        Layout.preferredWidth: 90
+                        text: model.subName
+                        color: enabledSwitch.checked ? "#cdd6f4" : "#6c7086"
                         elide: Text.ElideRight
                         font.pixelSize: 13
                     }
 
                     Text {
+                        visible: !row.editing
                         Layout.fillWidth: true
-                        text: subUrl
-                        color: "#6c7086"
+                        text: model.subUrl
+                        color: enabledSwitch.checked ? "#6c7086" : "#45475a"
                         elide: Text.ElideMiddle
                         font.pixelSize: 12
                     }
 
+                    // 编辑模式
+                    TextField {
+                        id: editName
+                        visible: row.editing
+                        Layout.preferredWidth: 90
+                        text: model.subName
+                        color: "#cdd6f4"
+                        font.pixelSize: 12
+                        background: Rectangle { color: "#313244"; radius: 4 }
+                    }
+
+                    TextField {
+                        id: editUrl
+                        visible: row.editing
+                        Layout.fillWidth: true
+                        text: model.subUrl
+                        color: "#cdd6f4"
+                        font.pixelSize: 12
+                        background: Rectangle { color: "#313244"; radius: 4 }
+                    }
+
                     Text {
-                        Layout.preferredWidth: 50
-                        text: channelCount + " 个"
+                        Layout.preferredWidth: 45
+                        text: model.channelCount + " 个"
                         color: "#a6adc8"
                         font.pixelSize: 12
                     }
 
                     Button {
+                        visible: !row.editing
+                        text: "编辑"
+                        flat: true
+                        palette.buttonText: "#89b4fa"
+                        font.pixelSize: 12
+                        onClicked: {
+                            row.editing = true
+                            editName.text = model.subName
+                            editUrl.text = model.subUrl
+                        }
+                    }
+
+                    Button {
+                        visible: row.editing
+                        text: "保存"
+                        flat: true
+                        palette.buttonText: "#a6e3a1"
+                        font.pixelSize: 12
+                        enabled: editName.text !== "" && editUrl.text !== ""
+                        onClicked: {
+                            AppBackend.updateSubscription(model.subId, editName.text, editUrl.text)
+                            row.editing = false
+                        }
+                    }
+
+                    Button {
+                        visible: row.editing
+                        text: "取消"
+                        flat: true
+                        palette.buttonText: "#6c7086"
+                        font.pixelSize: 12
+                        onClicked: row.editing = false
+                    }
+
+                    Button {
+                        visible: !row.editing
                         text: "刷新"
                         flat: true
                         palette.buttonText: "#89b4fa"
                         font.pixelSize: 12
-                        onClicked: AppBackend.refreshSubscription(subId)
+                        onClicked: AppBackend.refreshSubscription(model.subId)
                     }
 
                     Button {
@@ -114,7 +185,7 @@ Dialog {
                         flat: true
                         palette.buttonText: "#f38ba8"
                         font.pixelSize: 12
-                        onClicked: AppBackend.removeSubscription(subId)
+                        onClicked: AppBackend.removeSubscription(model.subId)
                     }
                 }
             }

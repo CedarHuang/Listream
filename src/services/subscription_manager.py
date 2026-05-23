@@ -59,6 +59,25 @@ class SubscriptionManager:
         self._persist()
         self._rebuild_channels()
 
+    def update(self, subscription_id: str, name: str, url: str) -> None:
+        for s in self._subscriptions:
+            if s.id == subscription_id:
+                s.name = name
+                s.url = url
+                logger.info("更新订阅 subscription_id=%s name=%s url=%s", subscription_id, name, url)
+                self._persist()
+                self._schedule_fetch(s)
+                return
+
+    def set_enabled(self, subscription_id: str, enabled: bool) -> None:
+        for s in self._subscriptions:
+            if s.id == subscription_id:
+                s.enabled = enabled
+                logger.info("切换订阅 subscription_id=%s enabled=%s", subscription_id, enabled)
+                self._persist()
+                self._rebuild_channels()
+                return
+
     def refresh(self, subscription_id: str) -> None:
         for s in self._subscriptions:
             if s.id == subscription_id:

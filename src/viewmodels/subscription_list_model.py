@@ -9,6 +9,7 @@ class SubscriptionListModel(QAbstractListModel):
     UrlRole = Qt.UserRole + 3
     ChannelCountRole = Qt.UserRole + 4
     LastUpdatedRole = Qt.UserRole + 5
+    EnabledRole = Qt.UserRole + 6
 
     _ROLE_MAP = {
         IdRole: b"subId",
@@ -16,6 +17,7 @@ class SubscriptionListModel(QAbstractListModel):
         UrlRole: b"subUrl",
         ChannelCountRole: b"channelCount",
         LastUpdatedRole: b"lastUpdated",
+        EnabledRole: b"enabled",
     }
 
     def __init__(self, parent=None):
@@ -38,6 +40,7 @@ class SubscriptionListModel(QAbstractListModel):
             self.UrlRole: s.url,
             self.ChannelCountRole: s.channel_count,
             self.LastUpdatedRole: s.last_updated,
+            self.EnabledRole: s.enabled,
         }.get(role)
 
     def replace_all(self, subscriptions: list[Subscription]) -> None:
