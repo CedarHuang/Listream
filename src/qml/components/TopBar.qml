@@ -28,7 +28,16 @@ Rectangle {
             palette.buttonText: "#cdd6f4"
             onClicked: AppBackend.refreshAll()
         }
+
+        Button {
+            text: "设置"
+            flat: true
+            font.pixelSize: 13
+            palette.buttonText: "#cdd6f4"
+            onClicked: settingsDialog.open()
+        }
     }
 
     SubscriptionDialog { id: subDialog }
+    SettingsDialog { id: settingsDialog }
 }

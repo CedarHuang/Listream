@@ -1,9 +1,19 @@
 import logging
 
 from PySide6.QtCore import QObject, Signal, QTimer
-from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
+from PySide6.QtNetwork import (
+    QNetworkAccessManager,
+    QNetworkProxy,
+    QNetworkRequest,
+    QNetworkReply,
+)
 
 logger = logging.getLogger(__name__)
+
+_PROXY_TYPE_MAP = {
+    "http": QNetworkProxy.ProxyType.HttpProxy,
+    "socks5": QNetworkProxy.ProxyType.Socks5Proxy,
+}
 
 
 class Fetcher(QObject):
@@ -13,6 +23,20 @@ class Fetcher(QObject):
     def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
         self._nam = QNetworkAccessManager(self)
+
+    def configure_proxy(self, proxy: dict) -> None:
+        """根据配置字典设置代理，enabled=False 时关闭代理。"""
+        if not proxy.get("enabled"):
+            self._nam.setProxy(QNetworkProxy(QNetworkProxy.ProxyType.NoProxy))
+            return
+        proxy_type = _PROXY_TYPE_MAP.get(proxy.get("type", "http"), QNetworkProxy.ProxyType.HttpProxy)
+        host = proxy.get("host", "")
+        port = proxy.get("port", 0)
+        if host and port:
+            self._nam.setProxy(QNetworkProxy(proxy_type, host, port))
+            logger.info("代理已设置 type=%s host=%s port=%s", proxy.get("type"), host, port)
+        else:
+            logger.warning("代理已启用但 host/port 无效，已忽略")
 
     def fetch(self, subscription_id: str, url: str) -> None:
         logger.info("开始抓取 subscription_id=%s url=%s", subscription_id, url)

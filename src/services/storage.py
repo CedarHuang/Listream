@@ -12,7 +12,7 @@ def _appdata_dir() -> Path:
     base = os.environ.get("LISTREAM_DATA_DIR")
     if base:
         return Path(base)
-    return Path(os.environ["APPDATA"]) / "Listream"
+    return Path(os.environ["APPDATA"]) / "CedarHuang" / "Listream"
 
 
 def config_path() -> Path:
@@ -71,6 +71,21 @@ def delete_channel_cache(subscription_id: str) -> None:
         os.remove(path)
     except FileNotFoundError:
         pass
+
+
+def load_proxy_config() -> dict:
+    """返回 proxy 配置字典 {enabled, type, host, port}，无配置时返回空。"""
+    data = load_config()
+    proxy = data.get("proxy")
+    if isinstance(proxy, dict):
+        return proxy
+    return {}
+
+
+def save_proxy_config(proxy: dict) -> None:
+    data = load_config()
+    data["proxy"] = proxy
+    save_config(data)
 
 
 def load_last_channel() -> Optional[dict]:

@@ -4,7 +4,12 @@ from PySide6.QtCore import QObject, Signal, Slot
 
 from ..services.subscription_manager import SubscriptionManager
 from ..services.fetcher import Fetcher
-from ..services.storage import load_last_channel, save_last_channel
+from ..services.storage import (
+    load_last_channel,
+    save_last_channel,
+    load_proxy_config,
+    save_proxy_config,
+)
 from .channel_list_model import ChannelListModel, ChannelFilterModel
 from .subscription_list_model import SubscriptionListModel
 from .player_controller import PlayerController
@@ -55,10 +60,16 @@ class AppBackend(QObject):
         return ""
 
     def init(self) -> None:
+        self._apply_proxy()
         self._manager.load()
         self._sub_model.replace_all(self._manager.subscriptions)
         self._push_channels()
         self._manager.startup_refresh()
+
+    def _apply_proxy(self) -> None:
+        proxy = load_proxy_config()
+        if proxy:
+            self._fetcher.configure_proxy(proxy)
 
     @Slot(str, str)
     def addSubscription(self, name: str, url: str) -> None:
@@ -88,6 +99,17 @@ class AppBackend(QObject):
     @Slot(QObject)
     def setRenderer(self, renderer: QObject) -> None:
         self._player.set_renderer(renderer)
+
+    @Slot(result="QVariantMap")
+    def getProxyConfig(self) -> dict:
+        return load_proxy_config()
+
+    @Slot(bool, str, str, int)
+    def setProxyConfig(self, enabled: bool, proxy_type: str, host: str, port: int) -> None:
+        proxy = {"enabled": enabled, "type": proxy_type, "host": host, "port": port}
+        save_proxy_config(proxy)
+        logger.info("代理配置已保存 enabled=%s type=%s host=%s port=%s", enabled, proxy_type, host, port)
+        self._fetcher.configure_proxy(proxy)
 
     def _on_fetched(self, sub_id: str, content: str | None, error: str) -> None:
         self._manager.on_fetch_completed(sub_id, content, error)
