@@ -13,7 +13,11 @@ Dialog {
     topPadding: 0
     leftPadding: Theme.space6
     rightPadding: Theme.space6
-    bottomPadding: 0
+    bottomPadding: Theme.space6
+
+    parent: Overlay.overlay
+    x: (parent.width - width) / 2
+    y: (parent.height - height) / 2
 
     Overlay.modal: Rectangle {
         color: Theme.overlayDim
@@ -22,6 +26,8 @@ Dialog {
     background: Rectangle {
         color: Theme.bgOverlay
         radius: Theme.radiusLg
+        border.color: Theme.border
+        border.width: 1
     }
 
     header: Rectangle {
@@ -57,8 +63,7 @@ Dialog {
         }
     }
 
-    ColumnLayout {
-        anchors.fill: parent
+    contentItem: ColumnLayout {
         spacing: Theme.space3
 
         RowLayout {
@@ -74,7 +79,7 @@ Dialog {
                 font.pixelSize: Theme.fontSizeMd
                 background: Rectangle {
                     color: Theme.bgField
-                    radius: Theme.radiusSm
+                    radius: Theme.radiusMd
                     border.width: 1
                     border.color: nameField.activeFocus ? Theme.accent : Theme.border
                 }
@@ -89,7 +94,7 @@ Dialog {
                 font.pixelSize: Theme.fontSizeMd
                 background: Rectangle {
                     color: Theme.bgField
-                    radius: Theme.radiusSm
+                    radius: Theme.radiusMd
                     border.width: 1
                     border.color: urlField.activeFocus ? Theme.accent : Theme.border
                 }
@@ -203,7 +208,7 @@ Dialog {
                                 color: Theme.textPrimary
                                 font.pixelSize: Theme.fontSizeMd
                                 font.bold: true
-                                background: Rectangle { color: Theme.bgSurface; radius: Theme.radiusSm }
+                                background: Rectangle { color: Theme.bgSurface; radius: Theme.radiusMd }
                             }
 
                             TextField {
@@ -212,7 +217,7 @@ Dialog {
                                 text: model.subUrl
                                 color: Theme.textPrimary
                                 font.pixelSize: Theme.fontSizeXs
-                                background: Rectangle { color: Theme.bgSurface; radius: Theme.radiusSm }
+                                background: Rectangle { color: Theme.bgSurface; radius: Theme.radiusMd }
                             }
                         }
                     }
@@ -287,7 +292,11 @@ Dialog {
                         rightPadding: Theme.space6
                         bottomPadding: Theme.space6
 
+                        parent: Overlay.overlay
                         implicitHeight: topPadding + contentItem.implicitHeight + bottomPadding
+
+                        x: parent ? (parent.width - width) / 2 : 0
+                        y: parent ? (parent.height - height) / 2 : 0
 
                         Overlay.modal: Rectangle {
                             color: Theme.overlayDim
@@ -296,6 +305,8 @@ Dialog {
                         background: Rectangle {
                             color: Theme.bgOverlay
                             radius: Theme.radiusLg
+                            border.color: Theme.border
+                            border.width: 1
                         }
 
                         contentItem: ColumnLayout {

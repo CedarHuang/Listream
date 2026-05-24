@@ -24,7 +24,7 @@ ListView {
         contentItem: Rectangle {
             implicitWidth: 6
             implicitHeight: 100
-            radius: 3
+            radius: Theme.radiusSm
             color: Theme.bgHover
         }
         background: Rectangle {

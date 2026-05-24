@@ -14,7 +14,11 @@ Dialog {
     rightPadding: Theme.space6
     bottomPadding: Theme.space6
 
+    parent: Overlay.overlay
     implicitHeight: header.height + topPadding + contentItem.implicitHeight + bottomPadding
+
+    x: (parent.width - width) / 2
+    y: (parent.height - height) / 2
 
     Overlay.modal: Rectangle {
         color: Theme.overlayDim
@@ -23,6 +27,8 @@ Dialog {
     background: Rectangle {
         color: Theme.bgOverlay
         radius: Theme.radiusLg
+        border.color: Theme.border
+        border.width: 1
     }
 
     header: Rectangle {

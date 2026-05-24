@@ -16,6 +16,7 @@ ApplicationWindow {
     property bool sidebarCollapsed: false
     property bool _sidebarBeforeFullscreen: false
     property bool _skipAnim: false
+    readonly property color _themeBorder: Theme.border  // Python 侧 DWM 描边读取用
 
     Timer { id: animTimer; interval: 0; onTriggered: root._skipAnim = false }
 
@@ -218,8 +219,15 @@ ApplicationWindow {
         title: ""
         property alias text: msgText.text
         modal: true
-        implicitWidth: Math.min(500, Math.max(280, msgText.implicitWidth + Theme.space6 * 2))
-        anchors.centerIn: parent
+        parent: Overlay.overlay
+        topPadding: 0
+        leftPadding: Theme.space6
+        rightPadding: Theme.space6
+        bottomPadding: Theme.space6
+        implicitWidth: Math.min(500, Math.max(280, msgText.implicitWidth + leftPadding + rightPadding))
+        implicitHeight: header.height + topPadding + contentItem.implicitHeight + bottomPadding
+        x: (parent.width - width) / 2
+        y: (parent.height - height) / 2
 
         Overlay.modal: Rectangle {
             color: Theme.overlayDim
@@ -229,11 +237,23 @@ ApplicationWindow {
             color: Theme.bgOverlay
             border.color: Theme.error
             radius: Theme.radiusLg
+            border.width: 1
         }
 
-        ColumnLayout {
-            anchors.fill: parent
-            anchors.margins: Theme.space6
+        header: Rectangle {
+            height: 48
+            color: "transparent"
+
+            Label {
+                anchors { left: parent.left; leftMargin: Theme.space6; verticalCenter: parent.verticalCenter }
+                text: errorDialog.title
+                color: Theme.error
+                font.pixelSize: Theme.fontSizeXl
+                font.bold: true
+            }
+        }
+
+        contentItem: ColumnLayout {
             spacing: Theme.space4
 
             Label {

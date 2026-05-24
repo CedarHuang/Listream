@@ -7,11 +7,11 @@ QtObject {
     // ============================================================
     readonly property color bgPlayer:    "#0a0a0a"
     readonly property color bgWindow:    "#151515"
-    readonly property color bgSidebar:   "#1c1c1c"
-    readonly property color bgField:     "#242424"
-    readonly property color bgSurface:   "#2a2a2a"
-    readonly property color bgHover:     "#2f2f2f"
-    readonly property color bgOverlay:   "#222222"
+    readonly property color bgSidebar:   "#181818"
+    readonly property color bgField:     "#262626"
+    readonly property color bgSurface:   "#2e2e2e"
+    readonly property color bgHover:     "#363636"
+    readonly property color bgOverlay:   "#1e1e1e"
 
     // ============================================================
     // Text Hierarchy
@@ -46,7 +46,7 @@ QtObject {
     // ============================================================
     // Borders & Separators
     // ============================================================
-    readonly property color border:        "#272727"
+    readonly property color border:        "#383838"
     readonly property color borderLight:   "#323232"
 
     // ============================================================
@@ -77,7 +77,6 @@ QtObject {
     readonly property int radiusSm: 4
     readonly property int radiusMd: 8
     readonly property int radiusLg: 12
-    readonly property int radiusXl: 16
 
     // ============================================================
     // Animation

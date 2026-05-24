@@ -14,7 +14,11 @@ Dialog {
     rightPadding: Theme.space6
     bottomPadding: Theme.space6
 
+    parent: Overlay.overlay
     implicitHeight: header.height + topPadding + contentItem.implicitHeight + bottomPadding
+
+    x: (parent.width - width) / 2
+    y: (parent.height - height) / 2
 
     Overlay.modal: Rectangle {
         color: Theme.overlayDim
@@ -23,6 +27,8 @@ Dialog {
     background: Rectangle {
         color: Theme.bgOverlay
         radius: Theme.radiusLg
+        border.color: Theme.border
+        border.width: 1
     }
 
     header: Rectangle {
@@ -94,7 +100,7 @@ Dialog {
 
             background: Rectangle {
                 color: Theme.bgField
-                radius: Theme.radiusSm
+                radius: Theme.radiusMd
                 border.width: 1
                 border.color: typeCombo.activeFocus ? Theme.accent : Theme.border
             }
@@ -153,7 +159,7 @@ Dialog {
 
                 background: Rectangle {
                     color: Theme.bgField
-                    radius: Theme.radiusSm
+                    radius: Theme.radiusMd
                     border.color: Theme.border
                     border.width: 1
                 }
@@ -180,7 +186,7 @@ Dialog {
                 font.pixelSize: Theme.fontSizeMd
                 background: Rectangle {
                     color: Theme.bgField
-                    radius: Theme.radiusSm
+                    radius: Theme.radiusMd
                     border.width: 1
                     border.color: hostField.activeFocus ? Theme.accent : Theme.border
                 }
@@ -196,7 +202,7 @@ Dialog {
                 validator: IntValidator { bottom: 1; top: 65535 }
                 background: Rectangle {
                     color: Theme.bgField
-                    radius: Theme.radiusSm
+                    radius: Theme.radiusMd
                     border.width: 1
                     border.color: portField.activeFocus ? Theme.accent : Theme.border
                 }

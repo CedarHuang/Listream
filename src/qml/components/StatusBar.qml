@@ -22,7 +22,7 @@ Rectangle {
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             width: 8; height: 8
-            radius: 4
+            radius: Theme.radiusSm
             color: {
                 switch (PlayerController.status) {
                     case "playing": return Theme.success
