@@ -25,7 +25,7 @@ def main() -> None:
     app = QGuiApplication(sys.argv)
     app.setWindowIcon(QIcon(":/assets/icon.svg"))
     app.setApplicationName("Listream")
-    app.setOrganizationName("Listream")
+    app.setOrganizationName("CedarHuang")
 
     # 保持 engine 引用，防止 Python GC 销毁 QML 窗口
     engine = create_engine()

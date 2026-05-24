@@ -154,7 +154,7 @@ class MpvRenderer(QQuickFramebufferObject):
                 self._ctx = self._create_render_context(mpv)
                 if self._ctx is None:
                     return
-                self._parent.update()
+                self.update()
                 return
 
             fbo = self.framebufferObject()

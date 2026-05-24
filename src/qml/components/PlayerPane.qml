@@ -8,11 +8,22 @@ Rectangle {
     id: pane
     color: Theme.bgPlayer
 
-    MpvRenderer {
-        id: mpvRenderer
-        objectName: "mpvRenderer"
+    Loader {
+        id: mpvLoader
         anchors.fill: parent
-        Component.onCompleted: AppBackend.setRenderer(mpvRenderer)
+        active: false
+        sourceComponent: MpvRenderer {
+            objectName: "mpvRenderer"
+            anchors.fill: parent
+            Component.onCompleted: AppBackend.setRenderer(this)
+        }
+    }
+
+    Timer {
+        interval: 0
+        running: true
+        repeat: false
+        onTriggered: mpvLoader.active = true
     }
 
     Rectangle {

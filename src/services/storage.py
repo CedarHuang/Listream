@@ -7,6 +7,8 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
+_json_cache: dict[Path, dict] = {}
+
 
 def _appdata_dir() -> Path:
     base = os.environ.get("LISTREAM_DATA_DIR")
@@ -33,17 +35,22 @@ def ensure_dirs() -> None:
 
 
 def load_json(path: Path) -> dict:
+    if path in _json_cache:
+        return _json_cache[path]
     try:
         with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
     except FileNotFoundError:
-        return {}
+        data = {}
     except json.JSONDecodeError:
         logger.warning("JSON 解析失败 path=%s", path)
-        return {}
+        data = {}
+    _json_cache[path] = data
+    return data
 
 
 def save_json(path: Path, data: dict) -> None:
+    _json_cache.pop(path, None)
     tmp = path.with_suffix(".tmp")
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)

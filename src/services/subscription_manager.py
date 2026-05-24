@@ -42,6 +42,8 @@ class SubscriptionManager:
         data = load_config()
         sub_dicts = data.get("subscriptions", [])
         self._subscriptions = [Subscription.from_dict(d) for d in sub_dicts]
+
+    def rebuild_channels(self) -> None:
         self._rebuild_channels()
 
     def add(self, name: str, url: str) -> Subscription:

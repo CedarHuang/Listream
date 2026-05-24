@@ -19,18 +19,28 @@ class LogoCache(QObject):
         self._nam = QNetworkAccessManager(self)
         self._pending = 0
         self._active: set[str] = set()
+        self._cached: set[str] = set()
+
+    def warm(self) -> None:
+        try:
+            self._cached = {f.name for f in self._dir.iterdir() if f.is_file()}
+        except FileNotFoundError:
+            self._cached = set()
 
     def resolve(self, url: str) -> str:
-        """已有缓存返回 file:// 路径，否则返回原始 URL。"""
         if not url:
             return ""
         path = self._path_for(url)
-        return path.as_uri() if path.exists() else url
+        if path.name in self._cached:
+            return path.as_uri()
+        if path.exists():
+            self._cached.add(path.name)
+            return path.as_uri()
+        return url
 
     def prefetch(self, urls: list[str]) -> None:
-        """后台下载未缓存的 logo，跳过已在下载的 URL。"""
         for url in urls:
-            if not url or url in self._active or self._path_for(url).exists():
+            if not url or url in self._active or self._path_for(url).name in self._cached:
                 continue
             self._active.add(url)
             self._pending += 1
@@ -42,6 +52,7 @@ class LogoCache(QObject):
         path = self._path_for(url)
         if reply.error() == QNetworkReply.NetworkError.NoError:
             path.write_bytes(bytes(reply.readAll()))
+            self._cached.add(path.name)
         else:
             logger.debug("logo 下载失败 url=%s error=%s", url, reply.errorString())
         reply.deleteLater()

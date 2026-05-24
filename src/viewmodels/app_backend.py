@@ -1,6 +1,6 @@
 import logging
 
-from PySide6.QtCore import Property, QObject, Signal, Slot
+from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
 from PySide6.QtGui import QCursor
 
 from ..services.subscription_manager import SubscriptionManager
@@ -97,10 +97,15 @@ class AppBackend(QObject):
 
     def init(self) -> None:
         self._apply_proxy()
+        self._logo_cache.warm()
         self._manager.load()
         self._sub_model.replace_all(self._manager.subscriptions)
-        self._push_channels()
+        QTimer.singleShot(0, self._load_channels_deferred)
         self._manager.startup_refresh()
+
+    def _load_channels_deferred(self) -> None:
+        self._manager.rebuild_channels()
+        self._push_channels()
 
     def _apply_proxy(self) -> None:
         proxy = load_proxy_config()
