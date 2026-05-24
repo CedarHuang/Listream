@@ -47,3 +47,16 @@ class SubscriptionListModel(QAbstractListModel):
         self.beginResetModel()
         self._subscriptions = list(subscriptions)
         self.endResetModel()
+
+    def _find_row(self, sub_id: str) -> int:
+        for i, s in enumerate(self._subscriptions):
+            if s.id == sub_id:
+                return i
+        return -1
+
+    def notify_item(self, sub_id: str) -> None:
+        row = self._find_row(sub_id)
+        if row < 0:
+            return
+        idx = self.index(row)
+        self.dataChanged.emit(idx, idx, [])

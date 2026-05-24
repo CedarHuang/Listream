@@ -10,3 +10,4 @@ SettingsDialog       1.0 SettingsDialog.qml
 StatusBar            1.0 StatusBar.qml
 AboutDialog          1.0 AboutDialog.qml
 TextButton           1.0 TextButton.qml
+ToggleSwitch         1.0 ToggleSwitch.qml

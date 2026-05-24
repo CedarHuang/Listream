@@ -15,6 +15,7 @@
     <file>qml/Components/StatusBar.qml</file>
     <file>qml/Components/AboutDialog.qml</file>
     <file>qml/Components/TextButton.qml</file>
+    <file>qml/Components/ToggleSwitch.qml</file>
     <file>assets/icon.svg</file>
   </qresource>
 </RCC>

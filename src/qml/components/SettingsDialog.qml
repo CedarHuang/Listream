@@ -84,9 +84,8 @@ Dialog {
                 font.pixelSize: Theme.fontSizeMd
                 Layout.preferredWidth: 60
             }
-            Switch {
+            ToggleSwitch {
                 id: proxySwitch
-                palette.button: Theme.bgHover
             }
             Item { Layout.fillWidth: true }
         }
@@ -99,6 +98,7 @@ Dialog {
             font.pixelSize: Theme.fontSizeMd
 
             background: Rectangle {
+                implicitHeight: 30
                 color: Theme.bgField
                 radius: Theme.radiusMd
                 border.width: 1
@@ -107,32 +107,36 @@ Dialog {
 
             contentItem: Text {
                 leftPadding: Theme.space3
-                rightPadding: typeCombo.indicator.width
+                rightPadding: Theme.space3 + typeCombo.indicator.width
                 text: typeCombo.displayText
-                color: Theme.textPrimary
+                color: typeCombo.enabled ? Theme.textPrimary : Theme.textDisabled
                 font: typeCombo.font
                 verticalAlignment: Text.AlignVCenter
                 elide: Text.ElideRight
             }
 
-            indicator: Rectangle {
-                x: typeCombo.width - width - Theme.space2
-                y: typeCombo.topPadding + (typeCombo.availableHeight - height) / 2
+            indicator: Canvas {
+                id: arrowCanvas
                 width: 12; height: 12
-                color: "transparent"
+                x: typeCombo.width - width - typeCombo.rightPadding
+                y: typeCombo.topPadding + (typeCombo.availableHeight - height) / 2
+                contextType: "2d"
 
-                Canvas {
-                    anchors.fill: parent
-                    onPaint: {
-                        var ctx = getContext("2d")
-                        ctx.strokeStyle = Theme.textSecondary
-                        ctx.lineWidth = 1.5
-                        ctx.beginPath()
-                        ctx.moveTo(2, 4)
-                        ctx.lineTo(6, 8)
-                        ctx.lineTo(10, 4)
-                        ctx.stroke()
-                    }
+                Connections {
+                    target: typeCombo
+                    function onEnabledChanged() { arrowCanvas.requestPaint() }
+                }
+
+                onPaint: {
+                    var ctx = getContext("2d")
+                    ctx.clearRect(0, 0, width, height)
+                    ctx.strokeStyle = typeCombo.enabled ? Theme.textSecondary : Theme.textDisabled
+                    ctx.lineWidth = 1.5
+                    ctx.beginPath()
+                    ctx.moveTo(2, 4)
+                    ctx.lineTo(6, 8)
+                    ctx.lineTo(10, 4)
+                    ctx.stroke()
                 }
             }
 
@@ -146,7 +150,8 @@ Dialog {
                     leftPadding: Theme.space3
                 }
                 background: Rectangle {
-                    color: highlighted ? Theme.bgHover : Theme.bgField
+                    color: highlighted ? Theme.bgHover : "transparent"
+                    radius: Theme.radiusSm
                 }
                 highlighted: typeCombo.highlightedIndex === index
             }
@@ -154,11 +159,10 @@ Dialog {
             popup: Popup {
                 y: typeCombo.height + Theme.space1
                 width: typeCombo.width
-                implicitHeight: contentItem.implicitHeight
                 padding: Theme.space1
 
                 background: Rectangle {
-                    color: Theme.bgField
+                    color: Theme.bgSurface
                     radius: Theme.radiusMd
                     border.color: Theme.border
                     border.width: 1
@@ -166,8 +170,9 @@ Dialog {
 
                 contentItem: ListView {
                     clip: true
-                    implicitHeight: contentHeight
-                    model: typeCombo.popup.visible ? typeCombo.delegateModel : null
+                    implicitHeight: Math.max(contentHeight, 1)
+                    cacheBuffer: 200
+                    model: typeCombo.delegateModel
                     currentIndex: typeCombo.highlightedIndex
                 }
             }
@@ -185,6 +190,7 @@ Dialog {
                 color: Theme.textPrimary
                 font.pixelSize: Theme.fontSizeMd
                 background: Rectangle {
+                    implicitHeight: 30
                     color: Theme.bgField
                     radius: Theme.radiusMd
                     border.width: 1
@@ -201,6 +207,7 @@ Dialog {
                 font.pixelSize: Theme.fontSizeMd
                 validator: IntValidator { bottom: 1; top: 65535 }
                 background: Rectangle {
+                    implicitHeight: 30
                     color: Theme.bgField
                     radius: Theme.radiusMd
                     border.width: 1

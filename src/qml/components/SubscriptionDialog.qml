@@ -166,12 +166,11 @@ Dialog {
                     anchors.rightMargin: Theme.space2
                     spacing: Theme.space3
 
-                    Switch {
+                    ToggleSwitch {
                         id: enabledSwitch
                         checked: model.enabled !== undefined ? model.enabled : true
-                        palette.button: Theme.bgHover
                         Layout.preferredWidth: 40
-                        onToggled: AppBackend.setSubscriptionEnabled(model.subId, checked)
+                        onToggled: AppBackend.setSubscriptionEnabled(model.subId, enabledSwitch.checked)
                     }
 
                     Item {

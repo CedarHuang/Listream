@@ -115,12 +115,12 @@ class AppBackend(QObject):
     @Slot(str, str, str)
     def updateSubscription(self, sub_id: str, name: str, url: str) -> None:
         self._manager.update(sub_id, name, url)
-        self._sub_model.replace_all(self._manager.subscriptions)
+        self._sub_model.notify_item(sub_id)
 
     @Slot(str, bool)
     def setSubscriptionEnabled(self, sub_id: str, enabled: bool) -> None:
         self._manager.set_enabled(sub_id, enabled)
-        self._sub_model.replace_all(self._manager.subscriptions)
+        self._sub_model.notify_item(sub_id)
 
     @Slot(str)
     def refreshSubscription(self, sub_id: str) -> None:
@@ -170,6 +170,7 @@ class AppBackend(QObject):
 
     def _on_fetched(self, sub_id: str, content: str | None, error: str) -> None:
         self._manager.on_fetch_completed(sub_id, content, error)
+        self._sub_model.notify_item(sub_id)
         self._dec_busy()
         if error:
             logger.error("获取订阅失败 subscription_id=%s error=%s", sub_id, error)
@@ -177,7 +178,6 @@ class AppBackend(QObject):
 
     def _on_channels_changed(self) -> None:
         self._push_channels()
-        self._sub_model.replace_all(self._manager.subscriptions)
 
     def _push_channels(self) -> None:
         self._channel_model.replace_all(self._manager.all_channels)
