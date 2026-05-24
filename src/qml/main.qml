@@ -82,7 +82,22 @@ ApplicationWindow {
                     anchors.fill: parent
                     spacing: 0
 
-                    SearchBar { Layout.fillWidth: true }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Layout.leftMargin: Theme.space2
+                        Layout.rightMargin: Theme.space2
+                        spacing: Theme.space1
+
+                        SearchBar { Layout.fillWidth: true }
+
+                        RefreshButton {
+                            implicitWidth: 28; implicitHeight: 28
+                            enabled: !AppBackend.busy
+                            running: AppBackend.refreshingAll
+                            onClicked: AppBackend.refreshAll()
+                        }
+                    }
+
                     ChannelList { Layout.fillWidth: true; Layout.fillHeight: true }
                 }
             }

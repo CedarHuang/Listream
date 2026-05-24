@@ -228,6 +228,14 @@ Dialog {
                         Layout.preferredWidth: 40
                     }
 
+                    RefreshButton {
+                        visible: !row.editing
+                        implicitWidth: 24; implicitHeight: 24
+                        enabled: !model.refreshing
+                        running: model.refreshing
+                        onClicked: AppBackend.refreshSubscription(model.subId)
+                    }
+
                     TextButton {
                         visible: !row.editing
                         text: "编辑"
@@ -238,15 +246,6 @@ Dialog {
                             editName.text = model.subName
                             editUrl.text = model.subUrl
                         }
-                    }
-
-                    TextButton {
-                        visible: !row.editing
-                        text: "刷新"
-                        textColor: Theme.accent
-                        font.pixelSize: Theme.fontSizeSm
-                        enabled: !AppBackend.busy
-                        onClicked: AppBackend.refreshSubscription(model.subId)
                     }
 
                     TextButton {

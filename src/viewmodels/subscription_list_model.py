@@ -10,6 +10,7 @@ class SubscriptionListModel(QAbstractListModel):
     ChannelCountRole = Qt.UserRole + 4
     LastUpdatedRole = Qt.UserRole + 5
     EnabledRole = Qt.UserRole + 6
+    RefreshingRole = Qt.UserRole + 7
 
     _ROLE_MAP = {
         IdRole: b"subId",
@@ -18,11 +19,13 @@ class SubscriptionListModel(QAbstractListModel):
         ChannelCountRole: b"channelCount",
         LastUpdatedRole: b"lastUpdated",
         EnabledRole: b"enabled",
+        RefreshingRole: b"refreshing",
     }
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._subscriptions: list[Subscription] = []
+        self._refreshing_ids: set[str] = set()
 
     def roleNames(self):
         return self._ROLE_MAP
@@ -41,7 +44,15 @@ class SubscriptionListModel(QAbstractListModel):
             self.ChannelCountRole: s.channel_count,
             self.LastUpdatedRole: s.last_updated,
             self.EnabledRole: s.enabled,
+            self.RefreshingRole: s.id in self._refreshing_ids,
         }.get(role)
+
+    def set_refreshing(self, sub_id: str, refreshing: bool) -> None:
+        if refreshing:
+            self._refreshing_ids.add(sub_id)
+        else:
+            self._refreshing_ids.discard(sub_id)
+        self.notify_item(sub_id)
 
     def replace_all(self, subscriptions: list[Subscription]) -> None:
         self.beginResetModel()

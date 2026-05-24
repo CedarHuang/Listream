@@ -25,6 +25,7 @@ class AppBackend(QObject):
     errorOccurred = Signal(str, str)
     lastChannelChanged = Signal()
     busyChanged = Signal()
+    refreshingAllChanged = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -40,10 +41,15 @@ class AppBackend(QObject):
         self._manager.set_on_channels_changed(self._on_channels_changed)
         self._last_channel = load_last_channel()
         self._busy_count = 0
+        self._refreshing_all = False
 
     @Property(bool, notify=busyChanged)
     def busy(self) -> bool:
         return self._busy_count > 0
+
+    @Property(bool, notify=refreshingAllChanged)
+    def refreshingAll(self) -> bool:
+        return self._refreshing_all
 
     def _inc_busy(self, n: int = 1) -> None:
         was = self._busy_count > 0
@@ -56,6 +62,9 @@ class AppBackend(QObject):
             self._busy_count -= 1
             if self._busy_count == 0:
                 self.busyChanged.emit()
+                if self._refreshing_all:
+                    self._refreshing_all = False
+                    self.refreshingAllChanged.emit()
 
     @property
     def channelModel(self):
@@ -124,7 +133,7 @@ class AppBackend(QObject):
 
     @Slot(str)
     def refreshSubscription(self, sub_id: str) -> None:
-        self._inc_busy()
+        self._sub_model.set_refreshing(sub_id, True)
         self._manager.refresh(sub_id)
 
     @Slot()
@@ -132,6 +141,8 @@ class AppBackend(QObject):
         n = sum(1 for s in self._manager.subscriptions if s.enabled)
         if n > 0:
             self._inc_busy(n)
+        self._refreshing_all = True
+        self.refreshingAllChanged.emit()
         self._manager.refresh_all()
 
     @Slot(str, str)
@@ -170,6 +181,7 @@ class AppBackend(QObject):
 
     def _on_fetched(self, sub_id: str, content: str | None, error: str) -> None:
         self._manager.on_fetch_completed(sub_id, content, error)
+        self._sub_model.set_refreshing(sub_id, False)
         self._sub_model.notify_item(sub_id)
         self._dec_busy()
         if error:

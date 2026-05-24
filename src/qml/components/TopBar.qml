@@ -87,13 +87,6 @@ Rectangle {
         }
 
         TextButton {
-            text: AppBackend.busy ? "刷新中..." : "全部刷新"
-            font.pixelSize: Theme.fontSizeMd
-            enabled: !AppBackend.busy
-            onClicked: AppBackend.refreshAll()
-        }
-
-        TextButton {
             text: "设置"
             font.pixelSize: Theme.fontSizeMd
             onClicked: settingsDialog.open()
