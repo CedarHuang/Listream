@@ -32,6 +32,7 @@ Rectangle {
                 if (Math.abs(dy) < 10) return
                 var fracX = mouse.x / bar.width
                 var c = AppBackend.getCursorPos()
+                win.beginDragUnmaximize()
                 win.visibility = Window.Windowed
                 win.width = nr.w
                 win.height = nr.h
@@ -46,14 +47,10 @@ Rectangle {
         }
         onDoubleClicked: {
             var win = bar.Window.window
-            if (win.visibility === Window.FullScreen) {
+            if (win.visibility === Window.FullScreen)
                 win.exitFullscreen()
-            } else if (win.visibility === Window.Maximized) {
-                win.visibility = Window.Windowed
-            } else {
-                AppBackend.saveWindowRect(win.x, win.y, win.width, win.height)
-                win.visibility = Window.Maximized
-            }
+            else
+                win.toggleMaximized()
         }
     }
 
@@ -149,11 +146,10 @@ Rectangle {
             }
             onClicked: {
                 var win = bar.Window.window
-                if (win.visibility === Window.Maximized) win.showNormal()
-                else {
-                    AppBackend.saveWindowRect(win.x, win.y, win.width, win.height)
-                    win.showMaximized()
-                }
+                if (win.visibility === Window.FullScreen)
+                    win.exitFullscreen()
+                else
+                    win.toggleMaximized()
             }
             contentItem: Item {
                 Canvas {

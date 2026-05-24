@@ -57,12 +57,8 @@ def create_engine() -> QQmlApplicationEngine:
     _R = 8  # 对齐 Theme.radiusMd
 
     # --- DWM 路径 ---
-    _dwm_hwnd: int | None = None
-    try:
-        if platform.system() == "Windows":
-            _dwm_hwnd = int(_win.winId())
-    except Exception:
-        pass
+    backend._hwnd = int(_win.winId()) if platform.system() == "Windows" else 0
+    _dwm_hwnd: int | None = backend._hwnd if backend._hwnd else None
 
     DWMWA_CORNER = 33     # DWMWA_WINDOW_CORNER_PREFERENCE
     DWMWCP_ROUND = 2

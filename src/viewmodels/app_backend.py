@@ -42,6 +42,7 @@ class AppBackend(QObject):
         self._last_channel = load_last_channel()
         self._busy_count = 0
         self._refreshing_all = False
+        self._hwnd = 0
 
     @Property(bool, notify=busyChanged)
     def busy(self) -> bool:
@@ -149,6 +150,22 @@ class AppBackend(QObject):
         self._refreshing_all = True
         self.refreshingAllChanged.emit()
         self._manager.refresh_all()
+
+    @Slot()
+    def forceClearMaxWindowStyle(self) -> None:
+        """Win32: 强制清除 WS_MAXIMIZE 样式 + SW_RESTORE。"""
+        if not self._hwnd:
+            return
+        import ctypes
+        from ctypes import wintypes
+        h = wintypes.HWND(self._hwnd)
+        SW_RESTORE = 9
+        GWL_STYLE = -16
+        WS_MAXIMIZE = 0x01000000
+        ctypes.windll.user32.ShowWindow(h, SW_RESTORE)
+        style = ctypes.windll.user32.GetWindowLongW(h, GWL_STYLE)
+        if style & WS_MAXIMIZE:
+            ctypes.windll.user32.SetWindowLongW(h, GWL_STYLE, style & ~WS_MAXIMIZE)
 
     @Slot(str, str)
     def playChannel(self, url: str, name: str) -> None:
