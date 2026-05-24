@@ -1,4 +1,6 @@
 import logging
+from urllib.parse import urlparse
+from urllib.request import url2pathname
 
 from PySide6.QtCore import QObject, Signal, QTimer
 from PySide6.QtNetwork import (
@@ -39,6 +41,30 @@ class Fetcher(QObject):
             logger.warning("代理已启用但 host/port 无效，已忽略")
 
     def fetch(self, subscription_id: str, url: str) -> None:
+        if url.startswith("file://"):
+            self._fetch_local(subscription_id, url)
+        else:
+            self._fetch_remote(subscription_id, url)
+
+    def _fetch_local(self, subscription_id: str, url: str) -> None:
+        path = url2pathname(urlparse(url).path)
+        try:
+            logger.info("读取本地文件 subscription_id=%s path=%s", subscription_id, path)
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                content = f.read()
+            logger.info("本地文件读取成功 subscription_id=%s size=%d", subscription_id, len(content))
+            self.fetched.emit(subscription_id, content, "")
+        except FileNotFoundError:
+            logger.error("本地文件不存在 subscription_id=%s path=%s", subscription_id, path)
+            self.fetched.emit(subscription_id, None, "文件不存在")
+        except PermissionError:
+            logger.error("本地文件无权限 subscription_id=%s path=%s", subscription_id, path)
+            self.fetched.emit(subscription_id, None, "文件无读取权限")
+        except Exception as e:
+            logger.error("本地文件读取失败 subscription_id=%s path=%s", subscription_id, e)
+            self.fetched.emit(subscription_id, None, str(e))
+
+    def _fetch_remote(self, subscription_id: str, url: str) -> None:
         logger.info("开始抓取 subscription_id=%s url=%s", subscription_id, url)
         reply = self._nam.get(QNetworkRequest(url))
         timer = QTimer(self)

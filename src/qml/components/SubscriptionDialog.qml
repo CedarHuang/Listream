@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 import QtQuick.Layouts
 import Listream.ViewModels 1.0
 import Theme 1.0
@@ -78,6 +79,7 @@ Dialog {
                 color: Theme.textPrimary
                 font.pixelSize: Theme.fontSizeMd
                 background: Rectangle {
+                    implicitHeight: 30
                     color: Theme.bgField
                     radius: Theme.radiusMd
                     border.width: 1
@@ -85,26 +87,157 @@ Dialog {
                 }
             }
 
-            TextField {
-                id: urlField
+            Item {
+                id: capsule
                 Layout.fillWidth: true
-                placeholderText: "M3U 地址"
-                placeholderTextColor: Theme.textMuted
-                color: Theme.textPrimary
-                font.pixelSize: Theme.fontSizeMd
-                background: Rectangle {
+                implicitHeight: 30
+                property int protoIndex: 0
+                readonly property var protoLabels: ["https://", "http://", "file:///"]
+
+                Rectangle {
+                    anchors.fill: parent
                     color: Theme.bgField
+                    radius: Theme.radiusMd
+                }
+
+                RowLayout {
+                    anchors.fill: parent
+                    spacing: 0
+
+                    Rectangle {
+                        id: protoBtn
+                        Layout.fillHeight: true
+                        implicitWidth: protoText.implicitWidth + Theme.space3 * 2
+                        color: protoHover.containsMouse ? Theme.bgHover : "transparent"
+                        radius: Theme.radiusMd
+                        topRightRadius: 0
+                        bottomRightRadius: 0
+
+                        Behavior on color {
+                            ColorAnimation { duration: Theme.animFast }
+                        }
+
+                        Text {
+                            id: protoText
+                            anchors.centerIn: parent
+                            text: capsule.protoLabels[capsule.protoIndex]
+                            color: Theme.textPrimary
+                            font.pixelSize: Theme.fontSizeSm
+                        }
+
+                        MouseArea {
+                            id: protoHover
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                var pt = protoBtn.mapToItem(dialog.contentItem, 0, protoBtn.height + 4)
+                                protoMenu.x = pt.x
+                                protoMenu.y = pt.y
+                                protoMenu.open()
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        Layout.fillHeight: true
+                        Layout.topMargin: 7
+                        Layout.bottomMargin: 7
+                        implicitWidth: 1
+                        color: Theme.border
+                    }
+
+                    TextField {
+                        id: urlField
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        placeholderText: capsule.protoIndex === 2 ? "本地文件路径" : "远端订阅地址"
+                        placeholderTextColor: Theme.textMuted
+                        color: Theme.textPrimary
+                        font.pixelSize: Theme.fontSizeMd
+                        background: Rectangle {
+                            color: "transparent"
+                        }
+                    }
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    color: "transparent"
                     radius: Theme.radiusMd
                     border.width: 1
                     border.color: urlField.activeFocus ? Theme.accent : Theme.border
                 }
             }
 
+            Popup {
+                id: protoMenu
+                padding: 2
+                background: Rectangle {
+                    color: Theme.bgSurface
+                    radius: Theme.radiusMd
+                    border.color: Theme.border
+                    border.width: 1
+                }
+                contentItem: ListView {
+                    id: protoList
+                    implicitWidth: 80
+                    implicitHeight: contentItem.childrenRect.height
+                    spacing: 1
+                    model: capsule.protoLabels
+                    delegate: ItemDelegate {
+                        id: protoDelegate
+                        width: protoList.width
+                        height: 26
+                        hoverEnabled: true
+                        contentItem: Text {
+                            text: modelData
+                            color: Theme.textPrimary
+                            font.pixelSize: Theme.fontSizeSm
+                            verticalAlignment: Text.AlignVCenter
+                            leftPadding: Theme.space3
+                        }
+                        background: Rectangle {
+                            color: protoDelegate.hovered ? Theme.bgHover : "transparent"
+                            radius: Theme.radiusSm
+                        }
+                        onClicked: {
+                            capsule.protoIndex = index
+                            protoMenu.close()
+                        }
+                    }
+                }
+            }
+
+            Button {
+                id: browseBtn
+                visible: capsule.protoIndex === 2
+                text: "浏览"
+                font.pixelSize: Theme.fontSizeMd
+                hoverEnabled: true
+                contentItem: Text {
+                    text: browseBtn.text
+                    color: browseBtn.hovered ? Theme.textPrimary : Theme.textSecondary
+                    font: browseBtn.font
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+                background: Rectangle {
+                    color: browseBtn.hovered ? Theme.bgHover : "transparent"
+                    radius: Theme.radiusSm
+                    border.width: 1
+                    border.color: Theme.border
+                    implicitWidth: 56
+                    implicitHeight: 30
+                }
+                onClicked: fileDialog.open()
+            }
+
             Button {
                 id: addBtn
                 text: AppBackend.busy ? "添加中..." : "添加"
                 font.pixelSize: Theme.fontSizeMd
-                enabled: !AppBackend.busy && nameField.text !== "" && urlField.text !== ""
+                enabled: !AppBackend.busy && urlField.text !== ""
                 hoverEnabled: true
                 contentItem: Text {
                     text: addBtn.text
@@ -118,10 +251,10 @@ Dialog {
                     color: addBtn.enabled ? (addBtn.hovered ? Theme.accentHover : Theme.accent) : Theme.bgHover
                     radius: Theme.radiusSm
                     implicitWidth: 72
-                    implicitHeight: 34
+                    implicitHeight: 30
                 }
                 onClicked: {
-                    AppBackend.addSubscription(nameField.text, urlField.text)
+                    AppBackend.addSubscription(nameField.text, capsule.protoLabels[capsule.protoIndex] + urlField.text)
                     nameField.text = ""
                     urlField.text = ""
                 }
@@ -261,7 +394,7 @@ Dialog {
                         text: "保存"
                         textColor: Theme.success
                         font.pixelSize: Theme.fontSizeSm
-                        enabled: editName.text !== "" && editUrl.text !== ""
+                        enabled: editUrl.text !== ""
                         onClicked: {
                             AppBackend.updateSubscription(model.subId, editName.text, editUrl.text)
                             row.editing = false
@@ -365,6 +498,17 @@ Dialog {
                     }
                 }
             }
+        }
+    }
+
+    FileDialog {
+        id: fileDialog
+        title: "选择 M3U 文件"
+        fileMode: FileDialog.OpenFile
+        nameFilters: ["M3U 播放列表 (*.m3u *.m3u8)", "所有文件 (*)"]
+        onAccepted: {
+            var raw = selectedFile.toString()
+            urlField.text = raw.startsWith("file:///") ? raw.substring(8) : raw
         }
     }
 }
