@@ -85,7 +85,6 @@ _EXCLUDED_DLL_GLOBS_EXTRA = [
     "Qt6Quick3D*",
     "Qt6QuickTimeline*",
     "Qt6QuickVectorImage*",
-    "Qt6QuickDialogs2*",
     "Qt6QuickTest*",
     "Qt6QuickControls2FluentWinUI3*",
     "Qt6QuickControls2Imagine*",
