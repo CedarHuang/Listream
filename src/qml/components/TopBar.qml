@@ -8,6 +8,12 @@ Rectangle {
     height: Theme.space10
     color: Theme.bgWindow
 
+    Rectangle {
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+        height: 1
+        color: Theme.border
+    }
+
     MouseArea {
         anchors.fill: parent
         property point clickPos: "0,0"

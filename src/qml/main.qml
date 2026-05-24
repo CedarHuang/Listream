@@ -128,14 +128,15 @@ ApplicationWindow {
                 property bool collapsed: root.sidebarCollapsed
                 anchors {
                     left: parent.left
-                    leftMargin: sidebar.width - 1
+                    leftMargin: sidebar.width
                     verticalCenter: parent.verticalCenter
                 }
-                width: collapsed ? 22 : 24
+                width: 20
                 height: 60
                 topLeftRadius: 0; bottomLeftRadius: 0
-                topRightRadius: Theme.radiusSm; bottomRightRadius: Theme.radiusSm
+                topRightRadius: Theme.radiusMd; bottomRightRadius: Theme.radiusMd
                 color: toggleMouse.containsMouse ? Theme.bgHover : Theme.bgSurface
+                opacity: 0.92
 
                 MouseArea {
                     id: toggleMouse
@@ -155,9 +156,9 @@ ApplicationWindow {
                         ctx.strokeStyle = Theme.textSecondary; ctx.lineWidth = 1.5
                         ctx.beginPath()
                         if (toggleBtn.collapsed) {
-                            ctx.moveTo(6, 1); ctx.lineTo(2, 6); ctx.lineTo(6, 11)
-                        } else {
                             ctx.moveTo(2, 1); ctx.lineTo(6, 6); ctx.lineTo(2, 11)
+                        } else {
+                            ctx.moveTo(6, 1); ctx.lineTo(2, 6); ctx.lineTo(6, 11)
                         }
                         ctx.stroke()
                     }
