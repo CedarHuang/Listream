@@ -1,7 +1,8 @@
 import ctypes
 import logging
+from collections import deque
 
-from PySide6.QtCore import QTimer, Signal, Slot
+from PySide6.QtCore import Signal, Slot
 from PySide6.QtGui import QOpenGLContext
 from PySide6.QtQuick import QQuickFramebufferObject
 from PySide6.QtQml import QmlElement
@@ -15,6 +16,7 @@ QML_IMPORT_MAJOR_VERSION = 1
 @QmlElement
 class MpvRenderer(QQuickFramebufferObject):
     statusChanged = Signal(str)
+    cacheProgressChanged = Signal(float, float)
     onFrameReady = Signal()
 
     def __init__(self, parent=None):
@@ -23,6 +25,10 @@ class MpvRenderer(QQuickFramebufferObject):
         self._proxy = {}
         self._volume = 80
         self._mpv_ok = True
+        self._play_count = 0
+        self._loading = False
+        self._loading_sn = 0
+        self._mpv_log_buf = deque(maxlen=120)
         self.onFrameReady.connect(self._do_update)
 
     def componentComplete(self):
@@ -48,31 +54,20 @@ class MpvRenderer(QQuickFramebufferObject):
     def play(self, url: str) -> None:
         if self._mpv:
             logger.info("mpv 播放 url=%s", url)
-            self._mpv.play(url)
+            self._play_count += 1
+            self._loading = True
+            self._loading_sn = self._play_count
+            self._mpv_log_buf.clear()
             self.statusChanged.emit("loading")
-            self._wait_playing(0)
-
-    def _wait_playing(self, attempts: int) -> None:
-        if not self._mpv:
-            return
-        try:
-            if self._mpv.playback_time is not None:
-                self.statusChanged.emit("playing")
-                return
-        except Exception:
-            pass
-        if attempts < 120:
-            QTimer.singleShot(100, lambda: self._wait_playing(attempts + 1))
-        else:
-            if not self._mpv.pause:
-                self.statusChanged.emit("playing")
+            self._mpv.play(url)
 
     @Slot()
     def stop(self) -> None:
         if self._mpv:
             logger.info("mpv 停止")
             self._mpv.stop()
-        self.statusChanged.emit("stopped")
+        self._loading = False
+        self._emit_status("stopped")
 
     @Slot()
     def togglePause(self) -> None:
@@ -103,6 +98,8 @@ class MpvRenderer(QQuickFramebufferObject):
         try:
             import mpv
 
+            # mpv 日志等级: no / fatal / error / warn / info / v / debug / trace
+            mpv_log_level = "info"
             opts = {
                 "vo": "libmpv",
                 "hwdec": "auto-safe",
@@ -111,13 +108,18 @@ class MpvRenderer(QQuickFramebufferObject):
                 "input_cursor": "no",
                 "input_default_bindings": "no",
                 "volume": self._volume,
+                "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                "msg-level": f"all={mpv_log_level}",
             }
             if self._proxy.get("enabled") and self._proxy.get("type") == "http":
                 opts["http-proxy"] = f"http://{self._proxy['host']}:{self._proxy['port']}"
 
-            self._mpv = mpv.MPV(**opts)
+            self._mpv = mpv.MPV(log_handler=self._on_mpv_log, loglevel=mpv_log_level, **opts)
             self._mpv.observe_property("pause", self._on_pause)
             self._mpv.observe_property("eof-reached", self._on_eof)
+            self._mpv.observe_property("demuxer-cache-state", self._on_cache_state)
+            self._mpv.observe_property("paused-for-cache", self._on_paused_for_cache)
+            self._register_mpv_events()
             logger.info("mpv(libmpv) 已初始化")
             self.statusChanged.emit("idle")
         except Exception as e:
@@ -126,14 +128,115 @@ class MpvRenderer(QQuickFramebufferObject):
             self.statusChanged.emit(f"error:{e}")
 
     def _on_pause(self, _name, value):
+        if self._loading or self._play_count == 0:
+            return
         if value:
-            self.statusChanged.emit("paused")
+            logger.info("mpv 已暂停")
+            self._emit_status("paused")
         else:
-            self.statusChanged.emit("playing")
+            logger.info("mpv 已恢复播放")
+            self._emit_status("playing")
 
     def _on_eof(self, _name, value):
+        if value and self._play_count > 0:
+            logger.info("mpv 播放结束 (EOF)")
+            self._loading = False
+            self._emit_status("stopped")
+
+    def _on_cache_state(self, _name, value):
+        if not value:
+            return
+        duration = value.get("cache-duration", 0) or 0
+        speed = value.get("raw-input-rate", 0) or 0
+        try:
+            self.cacheProgressChanged.emit(float(duration), float(speed))
+        except RuntimeError:
+            pass
+
+    def _on_paused_for_cache(self, _name, value):
         if value:
-            self.statusChanged.emit("stopped")
+            if self._play_count == 0:
+                return
+            if self._loading:
+                if self._loading_sn != self._play_count:
+                    return
+                self._loading = False
+            logger.info("mpv 缓冲不足，暂停等待")
+            self._emit_status("buffering")
+        elif not self._loading and self._play_count > 0:
+            logger.info("mpv 缓冲完成，恢复播放")
+            if self._mpv and self._mpv.pause:
+                self._emit_status("paused")
+            else:
+                self._emit_status("playing")
+
+    def _emit_status(self, status: str) -> None:
+        try:
+            self.statusChanged.emit(status)
+        except RuntimeError:
+            pass
+
+    def _register_mpv_events(self):
+        try:
+            self._mpv.register_event_callback(self._on_mpv_event)
+        except AttributeError:
+            self._mpv.event_callback("end-file")(self._on_end_file_event)
+            self._mpv.event_callback("playback-restart")(self._on_playback_restart)
+
+    def _on_mpv_log(self, level: str, prefix: str, text: str) -> None:
+        text = text.strip()
+        if not text:
+            return
+        self._mpv_log_buf.append(f"[{level}] {prefix}: {text}")
+
+    @staticmethod
+    def _err_text(code: int) -> str:
+        try:
+            import mpv
+            return mpv.ErrorCode.human_readable(code)
+        except Exception:
+            return f"错误码 {code}"
+
+    def _dump_mpv_logs(self) -> str:
+        if not self._mpv_log_buf:
+            return ""
+        return "\n".join(f"    {msg}" for msg in self._mpv_log_buf)
+
+    def _report_error(self, err_code: int) -> None:
+        logs = self._dump_mpv_logs()
+        logger.warning("mpv 流错误: %s (code=%d)", self._err_text(err_code), err_code)
+        if logs:
+            logger.warning("mpv 详细日志:\n%s", logs)
+
+    def _handle_end_file(self, data) -> None:
+        if data is None:
+            return
+        if data.reason == 4:  # ERROR
+            self._report_error(data.error)
+            self._emit_status("error:stream")
+        elif data.reason == 0:  # EOF
+            logger.info("mpv 流正常结束 (EOF)")
+        elif data.reason == 2:  # ABORTED
+            logger.info("mpv 流被中断 (ABORTED)")
+
+    def _handle_playback_restart(self) -> None:
+        if self._loading and self._loading_sn == self._play_count:
+            logger.info("mpv 播放已开始 (PLAYBACK_RESTART)")
+            self._loading = False
+            self._emit_status("playing")
+
+    def _on_mpv_event(self, event):
+        eid = event.event_id.value
+        if eid == 7:  # END_FILE
+            self._handle_end_file(event.data)
+        elif eid == 21:  # PLAYBACK_RESTART
+            self._handle_playback_restart()
+
+    def _on_end_file_event(self, event):
+        self._handle_end_file(event.data)
+
+    def _on_playback_restart(self, event):
+        self._handle_playback_restart()
 
     # ---- Renderer ----
 

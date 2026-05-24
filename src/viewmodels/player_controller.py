@@ -12,6 +12,7 @@ class PlayerController(QObject):
     titleChanged = Signal()
     statusChanged = Signal(str)
     urlChanged = Signal()
+    cacheProgressChanged = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -21,11 +22,14 @@ class PlayerController(QObject):
         self._status = "idle"
         self._renderer = None
         self._proxy = {}
+        self._cache_duration = 0.0
+        self._cache_speed = 0.0
 
     def set_renderer(self, renderer) -> None:
         self._renderer = renderer
         if renderer is not None:
             renderer.statusChanged.connect(self._on_renderer_status)
+            renderer.cacheProgressChanged.connect(self._on_cache_progress)
             if self._proxy:
                 renderer.configure_proxy(self._proxy)
 
@@ -39,6 +43,11 @@ class PlayerController(QObject):
         if status.startswith("error:"):
             logger.error("渲染器错误: %s", status)
         self.statusChanged.emit(status)
+
+    def _on_cache_progress(self, duration: float, speed: float) -> None:
+        self._cache_duration = duration
+        self._cache_speed = speed
+        self.cacheProgressChanged.emit()
 
     @Property(float, notify=volumeChanged)
     def volume(self) -> float:
@@ -90,3 +99,11 @@ class PlayerController(QObject):
     @Property(str, notify=statusChanged)
     def status(self) -> str:
         return self._status
+
+    @Property(float, notify=cacheProgressChanged)
+    def cacheDuration(self) -> float:
+        return self._cache_duration
+
+    @Property(float, notify=cacheProgressChanged)
+    def cacheSpeed(self) -> float:
+        return self._cache_speed

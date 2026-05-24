@@ -79,7 +79,7 @@ Rectangle {
         radius: Theme.radiusLg
         color: Theme.bgOverlay
         opacity: 0.92
-        visible: PlayerController.status === "loading"
+        visible: PlayerController.status === "loading" || PlayerController.status === "buffering"
 
         Column {
             anchors.centerIn: parent
@@ -88,10 +88,10 @@ Rectangle {
                 id: spinner
                 anchors.horizontalCenter: parent.horizontalCenter
                 palette.dark: Theme.accent
-                running: PlayerController.status === "loading"
+                running: true
             }
             Text {
-                text: "加载中..."
+                text: PlayerController.status === "loading" ? "连接中..." : "缓冲中..."
                 color: Theme.textSecondary
                 font.pixelSize: Theme.fontSizeMd
                 anchors.horizontalCenter: parent.horizontalCenter

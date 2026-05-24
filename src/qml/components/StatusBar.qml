@@ -42,17 +42,34 @@ Rectangle {
 
         Text {
             text: {
-                switch (PlayerController.status) {
-                    case "loading": return "缓冲中..."
-                    case "playing": return "播放中"
-                    case "paused": return "已暂停"
-                    case "error": return "播放错误"
-                    default: return ""
-                }
+                var st = PlayerController.status
+                if (st === "loading") return "连接中..."
+                if (st === "buffering") return "缓冲中..."
+                if (st === "playing") return "播放中"
+                if (st === "paused") return "已暂停"
+                if (st.startsWith("error")) return "播放错误"
+                return ""
             }
-            color: Theme.textSecondary
+            color: {
+                if (PlayerController.status.startsWith("error")) return Theme.error
+                return Theme.textSecondary
+            }
             font.pixelSize: Theme.fontSizeSm
-            visible: PlayerController.status !== "idle"
+            visible: PlayerController.status !== "idle" && PlayerController.status !== "stopped"
+        }
+
+        Text {
+            text: {
+                var parts = []
+                if (PlayerController.cacheDuration > 0)
+                    parts.push("缓存 " + PlayerController.cacheDuration.toFixed(1) + "s")
+                if (PlayerController.cacheSpeed > 0)
+                    parts.push("↓ " + (PlayerController.cacheSpeed / 1024).toFixed(0) + " KB/s")
+                return parts.join(" · ")
+            }
+            color: Theme.textMuted
+            font.pixelSize: Theme.fontSizeSm
+            visible: text !== "" && PlayerController.status !== "idle" && PlayerController.status !== "stopped"
         }
     }
 
