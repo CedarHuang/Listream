@@ -257,22 +257,22 @@ ApplicationWindow {
         MouseArea {
             width: 8; height: 8; anchors { top: parent.top; left: parent.left }
             cursorShape: resizeHandles.enabled ? Qt.SizeFDiagCursor : Qt.ArrowCursor
-            onPressed: root.startSystemResize(Qt.TopLeftCorner)
+            onPressed: root.startSystemResize(Qt.TopEdge | Qt.LeftEdge)
         }
         MouseArea {
             width: 8; height: 8; anchors { top: parent.top; right: parent.right }
             cursorShape: resizeHandles.enabled ? Qt.SizeBDiagCursor : Qt.ArrowCursor
-            onPressed: root.startSystemResize(Qt.TopRightCorner)
+            onPressed: root.startSystemResize(Qt.TopEdge | Qt.RightEdge)
         }
         MouseArea {
             width: 8; height: 8; anchors { bottom: parent.bottom; left: parent.left }
             cursorShape: resizeHandles.enabled ? Qt.SizeBDiagCursor : Qt.ArrowCursor
-            onPressed: root.startSystemResize(Qt.BottomLeftCorner)
+            onPressed: root.startSystemResize(Qt.BottomEdge | Qt.LeftEdge)
         }
         MouseArea {
             width: 8; height: 8; anchors { bottom: parent.bottom; right: parent.right }
             cursorShape: resizeHandles.enabled ? Qt.SizeFDiagCursor : Qt.ArrowCursor
-            onPressed: root.startSystemResize(Qt.BottomRightCorner)
+            onPressed: root.startSystemResize(Qt.BottomEdge | Qt.RightEdge)
         }
     }
 
