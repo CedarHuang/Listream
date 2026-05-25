@@ -93,6 +93,19 @@ class SubscriptionManager:
             if s.enabled:
                 self._schedule_fetch(s)
 
+    def move_subscription(self, from_index: int, to_index: int) -> bool:
+        n = len(self._subscriptions)
+        if from_index < 0 or from_index >= n or to_index < 0 or to_index >= n:
+            return False
+        if from_index == to_index:
+            return False
+        sub = self._subscriptions.pop(from_index)
+        self._subscriptions.insert(to_index, sub)
+        logger.info("移动订阅 from=%d to=%d name=%s", from_index, to_index, sub.name)
+        self._persist()
+        self._rebuild_channels()
+        return True
+
     def startup_refresh(self) -> None:
         threshold = datetime.now(timezone.utc) - timedelta(hours=12)
         for s in self._subscriptions:

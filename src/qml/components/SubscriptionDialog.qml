@@ -31,6 +31,18 @@ Dialog {
         border.width: 1
     }
 
+    function formatUpdateTime(isoStr) {
+        if (!isoStr) return "从未更新"
+        let now = new Date()
+        let then = new Date(isoStr)
+        let diffMin = Math.floor((now - then) / 60000)
+        if (diffMin < 1) return "刚刚更新"
+        if (diffMin < 60) return diffMin + "分钟前更新"
+        if (diffMin < 1440) return Math.floor(diffMin / 60) + "小时前更新"
+        if (diffMin < 43200) return Math.floor(diffMin / 1440) + "天前更新"
+        return Qt.formatDate(then, "yyyy-MM-dd") + " 更新"
+    }
+
     header: Rectangle {
         height: 48
         color: "transparent"
@@ -254,7 +266,11 @@ Dialog {
                     implicitHeight: 30
                 }
                 onClicked: {
-                    AppBackend.addSubscription(nameField.text, capsule.protoLabels[capsule.protoIndex] + urlField.text)
+                    let url = urlField.text.trim()
+                    if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(url)) {
+                        url = capsule.protoLabels[capsule.protoIndex] + url
+                    }
+                    AppBackend.addSubscription(nameField.text, url)
                     nameField.text = ""
                     urlField.text = ""
                 }
@@ -268,23 +284,28 @@ Dialog {
             clip: true
             model: SubscriptionListModel
             spacing: 0
+            reuseItems: true
+
+            move: Transition {
+                SmoothedAnimation { property: "y"; duration: 250; easing.type: Easing.OutCubic }
+            }
+            displaced: Transition {
+                SmoothedAnimation { property: "y"; duration: 250; easing.type: Easing.OutCubic }
+            }
 
             delegate: Rectangle {
                 id: row
                 width: subListView.width
                 height: 53
-                color: row.editing ? Theme.bgField : (itemHover.hovered ? Theme.bgHover : "transparent")
+                color: row.editing ? Theme.bgField : "transparent"
                 property bool editing: false
+
+                HoverHandler {
+                    id: hoverHandler
+                }
 
                 Behavior on color {
                     ColorAnimation { duration: Theme.animFast }
-                }
-
-                MouseArea {
-                    id: itemHover
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    acceptedButtons: Qt.NoButton
                 }
 
                 Rectangle {
@@ -297,11 +318,12 @@ Dialog {
                     anchors.fill: parent
                     anchors.leftMargin: Theme.space2
                     anchors.rightMargin: Theme.space2
-                    spacing: Theme.space3
+                    spacing: Theme.space2
 
                     ToggleSwitch {
                         id: enabledSwitch
                         checked: model.enabled !== undefined ? model.enabled : true
+                        enabled: !model.refreshing
                         Layout.preferredWidth: 40
                         onToggled: AppBackend.setSubscriptionEnabled(model.subId, enabledSwitch.checked)
                     }
@@ -333,6 +355,13 @@ Dialog {
                                 elide: Text.ElideMiddle
                             }
 
+                            Text {
+                                visible: !row.editing
+                                text: model.channelCount + " 个 · " + formatUpdateTime(model.lastUpdated)
+                                color: Theme.textMuted
+                                font.pixelSize: Theme.fontSizeXxs
+                            }
+
                             TextField {
                                 id: editName
                                 visible: row.editing
@@ -354,11 +383,75 @@ Dialog {
                         }
                     }
 
-                    Text {
-                        text: model.channelCount + " 个"
-                        color: Theme.textSecondary
-                        font.pixelSize: Theme.fontSizeSm
-                        Layout.preferredWidth: 40
+                    Item {
+                        visible: !row.editing && hoverHandler.hovered
+                        Layout.preferredWidth: 18
+                        Layout.preferredHeight: 30
+                        Layout.alignment: Qt.AlignVCenter
+
+                        Item {
+                            id: upArrow
+                            visible: index > 0
+                            anchors { top: parent.top; horizontalCenter: parent.horizontalCenter }
+                            width: 18; height: 14
+                            opacity: model.refreshing ? 0.35 : 1.0
+                            property color arrowColor: upHover.containsMouse ? Theme.accent : Theme.textSecondary
+
+                            Rectangle {
+                                width: 6; height: 1.5
+                                color: upArrow.arrowColor
+                                antialiasing: true
+                                rotation: -35
+                                anchors { right: parent.horizontalCenter; rightMargin: -1; verticalCenter: parent.verticalCenter; verticalCenterOffset: 1 }
+                            }
+                            Rectangle {
+                                width: 6; height: 1.5
+                                color: upArrow.arrowColor
+                                antialiasing: true
+                                rotation: 35
+                                anchors { left: parent.horizontalCenter; leftMargin: -1; verticalCenter: parent.verticalCenter; verticalCenterOffset: 1 }
+                            }
+
+                            MouseArea {
+                                id: upHover
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                enabled: !model.refreshing
+                                onClicked: AppBackend.moveSubscription(index, index - 1)
+                            }
+                        }
+
+                        Item {
+                            id: downArrow
+                            visible: index < subListView.count - 1
+                            anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter }
+                            width: 18; height: 14
+                            opacity: model.refreshing ? 0.35 : 1.0
+                            property color arrowColor: downHover.containsMouse ? Theme.accent : Theme.textSecondary
+
+                            Rectangle {
+                                width: 6; height: 1.5
+                                color: downArrow.arrowColor
+                                antialiasing: true
+                                rotation: 35
+                                anchors { right: parent.horizontalCenter; rightMargin: -1; verticalCenter: parent.verticalCenter; verticalCenterOffset: -1 }
+                            }
+                            Rectangle {
+                                width: 6; height: 1.5
+                                color: downArrow.arrowColor
+                                antialiasing: true
+                                rotation: -35
+                                anchors { left: parent.horizontalCenter; leftMargin: -1; verticalCenter: parent.verticalCenter; verticalCenterOffset: -1 }
+                            }
+
+                            MouseArea {
+                                id: downHover
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                enabled: !model.refreshing
+                                onClicked: AppBackend.moveSubscription(index, index + 1)
+                            }
+                        }
                     }
 
                     RefreshButton {
@@ -374,6 +467,8 @@ Dialog {
                         text: "编辑"
                         textColor: Theme.accent
                         font.pixelSize: Theme.fontSizeSm
+                        enabled: !model.refreshing
+                        leftPadding: Theme.space2; rightPadding: Theme.space2
                         onClicked: {
                             row.editing = true
                             editName.text = model.subName
@@ -386,6 +481,8 @@ Dialog {
                         text: "删除"
                         textColor: Theme.error
                         font.pixelSize: Theme.fontSizeSm
+                        enabled: !model.refreshing
+                        leftPadding: Theme.space2; rightPadding: Theme.space2
                         onClicked: confirmDelete.open()
                     }
 
@@ -395,6 +492,7 @@ Dialog {
                         textColor: Theme.success
                         font.pixelSize: Theme.fontSizeSm
                         enabled: editUrl.text !== ""
+                        leftPadding: Theme.space2; rightPadding: Theme.space2
                         onClicked: {
                             AppBackend.updateSubscription(model.subId, editName.text, editUrl.text)
                             row.editing = false
@@ -406,6 +504,7 @@ Dialog {
                         text: "取消"
                         textColor: Theme.textMuted
                         font.pixelSize: Theme.fontSizeSm
+                        leftPadding: Theme.space2; rightPadding: Theme.space2
                         onClicked: {
                             editName.text = model.subName
                             editUrl.text = model.subUrl

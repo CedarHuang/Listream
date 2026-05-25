@@ -52,6 +52,7 @@ QtObject {
     // ============================================================
     // Typography
     // ============================================================
+    readonly property int fontSizeXxs: 10
     readonly property int fontSizeXs:  11
     readonly property int fontSizeSm:  12
     readonly property int fontSizeMd:  13

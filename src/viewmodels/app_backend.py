@@ -117,9 +117,9 @@ class AppBackend(QObject):
     @Slot(str, str)
     def addSubscription(self, name: str, url: str) -> None:
         logger.info("添加订阅 name=%s url=%s", name, url)
-        self._inc_busy()
-        self._manager.add(name, url)
+        sub = self._manager.add(name, url)
         self._sub_model.replace_all(self._manager.subscriptions)
+        self._sub_model.set_refreshing(sub.id, True)
 
     @Slot(str)
     def removeSubscription(self, sub_id: str) -> None:
@@ -150,6 +150,13 @@ class AppBackend(QObject):
         self._refreshing_all = True
         self.refreshingAllChanged.emit()
         self._manager.refresh_all()
+
+    @Slot(int, int)
+    def moveSubscription(self, from_index: int, to_index: int) -> None:
+        # 先更新模型发出动画信号，再更新管理器持久化
+        if not self._sub_model.move_item(from_index, to_index):
+            return
+        self._manager.move_subscription(from_index, to_index)
 
     @Slot()
     def forceClearMaxWindowStyle(self) -> None:

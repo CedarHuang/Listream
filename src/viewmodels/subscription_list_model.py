@@ -59,6 +59,27 @@ class SubscriptionListModel(QAbstractListModel):
         self._subscriptions = list(subscriptions)
         self.endResetModel()
 
+    def moveRows(self, sourceParent, sourceRow, count, destParent, destChild):
+        return True
+
+    def move_item(self, from_index: int, to_index: int) -> bool:
+        n = len(self._subscriptions)
+        if from_index < 0 or from_index >= n or to_index < 0 or to_index >= n:
+            return False
+        if from_index == to_index:
+            return False
+        # beginMoveRows 的 destinationChild 是「移除源行后」的插入索引。
+        # 下移时最终位置 to_index 在缩表中等价于 to_index （pop 后原
+        # to_index 处的元素已左移），而 beginMoveRows 的语义是将行插入
+        # 到 destinationChild 之前，因此下移需 +1。
+        dest = to_index + 1 if to_index > from_index else to_index
+        super().beginMoveRows(QModelIndex(), from_index, from_index,
+                                QModelIndex(), dest)
+        sub = self._subscriptions.pop(from_index)
+        self._subscriptions.insert(to_index, sub)
+        super().endMoveRows()
+        return True
+
     def _find_row(self, sub_id: str) -> int:
         for i, s in enumerate(self._subscriptions):
             if s.id == sub_id:
