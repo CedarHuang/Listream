@@ -2,7 +2,7 @@ import ctypes
 import logging
 from collections import deque
 
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Signal, Slot, Property
 from PySide6.QtGui import QOpenGLContext
 from PySide6.QtQuick import QQuickFramebufferObject
 from PySide6.QtQml import QmlElement
@@ -12,18 +12,22 @@ logger = logging.getLogger(__name__)
 QML_IMPORT_NAME = "Listream.QmlItems"
 QML_IMPORT_MAJOR_VERSION = 1
 
+_AF_FILTER = "lavfi=[dynaudnorm=f=500:g=7:m=2:r=0.2:o=0.72]"
+
 
 @QmlElement
 class MpvRenderer(QQuickFramebufferObject):
     statusChanged = Signal(str)
     cacheProgressChanged = Signal(float, float)
     onFrameReady = Signal()
+    afEnabledChanged = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._mpv = None
         self._proxy = {}
         self._volume = 80
+        self._af_enabled = True
         self._mpv_ok = True
         self._play_count = 0
         self._loading = False
@@ -74,11 +78,25 @@ class MpvRenderer(QQuickFramebufferObject):
         if self._mpv:
             self._mpv.pause = not self._mpv.pause
 
-    @Slot(float)
-    def setVolume(self, vol: float) -> None:
-        self._volume = int(vol * 100)
+    @Slot(int)
+    def setVolume(self, vol: int) -> None:
+        self._volume = vol
         if self._mpv:
-            self._mpv.volume = self._volume
+            # mpv 内置三次方: gain=(mpv_vol/100)³
+            # 叠加 0.5 次方后: gain=(slider/100)^1.5 → Stevens 定律感知线性最优
+            self._mpv.volume = int((vol / 100.0) ** 0.5 * 100)
+
+    @Property(bool, notify=afEnabledChanged)
+    def afEnabled(self) -> bool:
+        return self._af_enabled
+
+    @afEnabled.setter
+    def afEnabled(self, v: bool) -> None:
+        if self._af_enabled != v:
+            self._af_enabled = v
+            self.afEnabledChanged.emit()
+            if self._mpv:
+                self._mpv["af"] = _AF_FILTER if v else ""
 
     def configure_proxy(self, proxy: dict) -> None:
         self._proxy = proxy
@@ -107,7 +125,7 @@ class MpvRenderer(QQuickFramebufferObject):
                 "osc": "no",
                 "input_cursor": "no",
                 "input_default_bindings": "no",
-                "volume": self._volume,
+                "af": _AF_FILTER if self._af_enabled else "",
                 "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
                 "msg-level": f"all={mpv_log_level}",
             }
@@ -120,6 +138,7 @@ class MpvRenderer(QQuickFramebufferObject):
             self._mpv.observe_property("demuxer-cache-state", self._on_cache_state)
             self._mpv.observe_property("paused-for-cache", self._on_paused_for_cache)
             self._register_mpv_events()
+            self.setVolume(self._volume)
             logger.info("mpv(libmpv) 已初始化")
             self.statusChanged.emit("idle")
         except Exception as e:

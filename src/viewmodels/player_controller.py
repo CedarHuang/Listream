@@ -9,6 +9,8 @@ logger = logging.getLogger(__name__)
 
 class PlayerController(QObject):
     volumeChanged = Signal()
+    mutedChanged = Signal()
+    afEnabledChanged = Signal()
     titleChanged = Signal()
     statusChanged = Signal(str)
     urlChanged = Signal()
@@ -16,8 +18,13 @@ class PlayerController(QObject):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._volume = storage.load_volume() / 100.0
+        self._volume = storage.load_volume()
+        self._pre_mute_volume = self._volume
+        self._muted = storage.load_muted()
+        self._af_enabled = storage.load_af_enabled()
         self._title = ""
+        if self._muted:
+            self._volume = 0
         self._url = ""
         self._status = "idle"
         self._renderer = None
@@ -32,6 +39,9 @@ class PlayerController(QObject):
             renderer.cacheProgressChanged.connect(self._on_cache_progress)
             if self._proxy:
                 renderer.configure_proxy(self._proxy)
+            renderer.setVolume(self._volume)
+            renderer.afEnabled = self._af_enabled
+            self.afEnabledChanged.emit()
 
     def configure_proxy(self, proxy: dict) -> None:
         self._proxy = proxy
@@ -49,12 +59,12 @@ class PlayerController(QObject):
         self._cache_speed = speed
         self.cacheProgressChanged.emit()
 
-    @Property(float, notify=volumeChanged)
-    def volume(self) -> float:
+    @Property(int, notify=volumeChanged)
+    def volume(self) -> int:
         return self._volume
 
     @volume.setter
-    def volume(self, v: float) -> None:
+    def volume(self, v: int) -> None:
         if self._volume != v:
             self._volume = v
             self.volumeChanged.emit()
@@ -63,7 +73,36 @@ class PlayerController(QObject):
 
     @Slot()
     def save_volume(self) -> None:
-        storage.save_volume(round(self._volume * 100))
+        storage.save_volume(self._volume)
+
+    @Property(bool, notify=mutedChanged)
+    def muted(self) -> bool:
+        return self._muted
+
+    @muted.setter
+    def muted(self, v: bool) -> None:
+        if self._muted != v:
+            self._muted = v
+            self.mutedChanged.emit()
+            if v:
+                self._pre_mute_volume = self._volume
+                self.volume = 0
+            else:
+                self.volume = self._pre_mute_volume
+            storage.save_muted(v)
+
+    @Property(bool, notify=afEnabledChanged)
+    def afEnabled(self) -> bool:
+        return self._af_enabled
+
+    @afEnabled.setter
+    def afEnabled(self, v: bool) -> None:
+        if self._af_enabled != v:
+            self._af_enabled = v
+            self.afEnabledChanged.emit()
+            if self._renderer:
+                self._renderer.afEnabled = v
+            storage.save_af_enabled(v)
 
     @Property(str, notify=titleChanged)
     def title(self) -> str:

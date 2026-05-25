@@ -97,6 +97,30 @@ def save_volume(vol: int) -> None:
     save_config(data)
 
 
+def load_muted() -> bool:
+    data = load_config()
+    v = data.get("muted")
+    return bool(v) if isinstance(v, bool) else False
+
+
+def save_muted(muted: bool) -> None:
+    data = load_config()
+    data["muted"] = muted
+    save_config(data)
+
+
+def load_af_enabled() -> bool:
+    data = load_config()
+    v = data.get("af_enabled")
+    return bool(v) if isinstance(v, bool) else True
+
+
+def save_af_enabled(enabled: bool) -> None:
+    data = load_config()
+    data["af_enabled"] = enabled
+    save_config(data)
+
+
 def load_proxy_config() -> dict:
     """返回 proxy 配置字典 {enabled, type, host, port}，无配置时返回空。"""
     data = load_config()

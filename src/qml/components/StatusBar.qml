@@ -81,17 +81,24 @@ Rectangle {
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            text: "音量"
-            color: Theme.textMuted
-            font.pixelSize: Theme.fontSizeSm
+            text: PlayerController.muted ? "🔇" : "🔊"
+            color: PlayerController.muted ? Theme.error : Theme.textMuted
+            font.pixelSize: Theme.fontSizeLg
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: PlayerController.muted = !PlayerController.muted
+            }
         }
 
         Slider {
             id: volSlider
+            anchors.verticalCenter: parent.verticalCenter
             width: 100
             from: 0; to: 100
-            value: PlayerController.volume * 100
-            onValueChanged: PlayerController.volume = value / 100
+            value: PlayerController.volume
+            onMoved: PlayerController.volume = Math.round(value)
             onPressedChanged: if (!pressed) PlayerController.save_volume()
 
             background: Rectangle {
@@ -120,8 +127,32 @@ Rectangle {
 
             ToolTip {
                 parent: volSlider.handle
-                visible: volSlider.pressed
+                visible: volSlider.hovered || volSlider.pressed
                 text: Math.round(volSlider.value)
+                delay: 200
+            }
+        }
+
+        Text {
+            id: afIcon
+            anchors.verticalCenter: parent.verticalCenter
+            text: "≈"
+            color: PlayerController.afEnabled ? Theme.accent : Theme.textMuted
+            font.pixelSize: Theme.fontSizeXxl
+
+            MouseArea {
+                id: afIconMouse
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: PlayerController.afEnabled = !PlayerController.afEnabled
+                hoverEnabled: true
+            }
+
+            ToolTip {
+                parent: afIcon
+                visible: afIconMouse.containsMouse
+                text: "响度均衡 " + (PlayerController.afEnabled ? "开" : "关")
+                delay: 200
             }
         }
     }
