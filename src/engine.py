@@ -3,7 +3,7 @@ import logging
 import platform
 from ctypes import wintypes
 
-from PySide6.QtGui import QRegion, QPainterPath
+from PySide6.QtGui import QRegion, QPainterPath, QIcon
 from PySide6.QtCore import QRectF
 from PySide6.QtQuick import QQuickWindow, QSGRendererInterface
 from PySide6.QtQuickControls2 import QQuickStyle
@@ -54,6 +54,7 @@ def create_engine() -> QQmlApplicationEngine:
 
     # ------- 无边框窗口圆角：DWM 原生（Win11）优先，setMask 兜底 -------
     _win = engine.rootObjects()[0]
+    _win.setIcon(QIcon(":/assets/icon.svg"))
     _R = 8  # 对齐 Theme.radiusMd
 
     # --- DWM 路径 ---
