@@ -121,6 +121,18 @@ def save_af_enabled(enabled: bool) -> None:
     save_config(data)
 
 
+def load_vf_enabled() -> bool:
+    data = load_config()
+    v = data.get("vf_enabled")
+    return bool(v) if isinstance(v, bool) else True
+
+
+def save_vf_enabled(enabled: bool) -> None:
+    data = load_config()
+    data["vf_enabled"] = enabled
+    save_config(data)
+
+
 def load_proxy_config() -> dict:
     """返回 proxy 配置字典 {enabled, type, host, port}，无配置时返回空。"""
     data = load_config()

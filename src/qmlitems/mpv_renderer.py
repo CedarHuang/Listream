@@ -1,6 +1,5 @@
 import ctypes
 import logging
-from collections import deque
 
 from PySide6.QtCore import Signal, Slot, Property
 from PySide6.QtGui import QOpenGLContext
@@ -8,11 +7,13 @@ from PySide6.QtQuick import QQuickFramebufferObject
 from PySide6.QtQml import QmlElement
 
 logger = logging.getLogger(__name__)
+_mpv_logger = logging.getLogger("mpv")
 
 QML_IMPORT_NAME = "Listream.QmlItems"
 QML_IMPORT_MAJOR_VERSION = 1
 
 _AF_FILTER = "lavfi=[dynaudnorm=f=500:g=7:m=2:r=0.2:o=0.72]"
+_VF_FILTER = "lavfi=[cas=strength=0.6]"
 
 
 @QmlElement
@@ -21,6 +22,7 @@ class MpvRenderer(QQuickFramebufferObject):
     cacheProgressChanged = Signal(float, float)
     onFrameReady = Signal()
     afEnabledChanged = Signal()
+    vfEnabledChanged = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -28,11 +30,12 @@ class MpvRenderer(QQuickFramebufferObject):
         self._proxy = {}
         self._volume = 80
         self._af_enabled = True
+        self._vf_enabled = True
         self._mpv_ok = True
         self._play_count = 0
         self._loading = False
         self._loading_sn = 0
-        self._mpv_log_buf = deque(maxlen=120)
+
         self.onFrameReady.connect(self._do_update)
 
     def componentComplete(self):
@@ -61,7 +64,6 @@ class MpvRenderer(QQuickFramebufferObject):
             self._play_count += 1
             self._loading = True
             self._loading_sn = self._play_count
-            self._mpv_log_buf.clear()
             self.statusChanged.emit("loading")
             self._mpv.play(url)
 
@@ -98,6 +100,20 @@ class MpvRenderer(QQuickFramebufferObject):
             if self._mpv:
                 self._mpv["af"] = _AF_FILTER if v else ""
 
+    @Property(bool, notify=vfEnabledChanged)
+    def vfEnabled(self) -> bool:
+        return self._vf_enabled
+
+    @vfEnabled.setter
+    def vfEnabled(self, v: bool) -> None:
+        if self._vf_enabled != v:
+            self._vf_enabled = v
+            self.vfEnabledChanged.emit()
+            if self._mpv:
+                self._mpv["deband"] = v
+                self._mpv["scale"] = "ewa_lanczossharp" if v else "lanczos"
+                self._mpv["vf"] = _VF_FILTER if v else ""
+
     def configure_proxy(self, proxy: dict) -> None:
         self._proxy = proxy
         if self._mpv:
@@ -116,8 +132,9 @@ class MpvRenderer(QQuickFramebufferObject):
         try:
             import mpv
 
-            # mpv 日志等级: no / fatal / error / warn / info / v / debug / trace
-            mpv_log_level = "info"
+            mpv_log_level = self._PY_TO_MPV.get(
+                logging.getLogger().getEffectiveLevel(), "info"
+            )
             opts = {
                 "vo": "libmpv",
                 "hwdec": "auto-safe",
@@ -126,6 +143,14 @@ class MpvRenderer(QQuickFramebufferObject):
                 "input_cursor": "no",
                 "input_default_bindings": "no",
                 "af": _AF_FILTER if self._af_enabled else "",
+                "vf": _VF_FILTER if self._vf_enabled else "",
+                "deband": self._vf_enabled,
+                "deband-iterations": 2,
+                "deband-threshold": 40,
+                "deband-grain": 6,
+                "scale": "ewa_lanczossharp" if self._vf_enabled else "lanczos",
+                "cscale": "spline36",
+                "dscale": "mitchell",
                 "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
                 "msg-level": f"all={mpv_log_level}",
             }
@@ -202,11 +227,31 @@ class MpvRenderer(QQuickFramebufferObject):
             self._mpv.event_callback("end-file")(self._on_end_file_event)
             self._mpv.event_callback("playback-restart")(self._on_playback_restart)
 
-    def _on_mpv_log(self, level: str, prefix: str, text: str) -> None:
+    _PY_TO_MPV = {
+        logging.FATAL: "fatal",
+        logging.ERROR: "error",
+        logging.WARN : "warn",
+        logging.INFO : "info",
+        logging.DEBUG: "v",
+    }
+
+    _MPV_LOG_MAP = {
+        "fatal": logging.FATAL,
+        "error": logging.ERROR,
+        "warn" : logging.WARN,
+        "info" : logging.INFO,
+        "v"    : logging.DEBUG,
+        "debug": logging.DEBUG,
+        "trace": logging.DEBUG,
+    }
+
+    def _on_mpv_log(self, level: str, _prefix: str, text: str) -> None:
         text = text.strip()
         if not text:
             return
-        self._mpv_log_buf.append(f"[{level}] {prefix}: {text}")
+        py_level = self._MPV_LOG_MAP.get(level)
+        if py_level is not None:
+            _mpv_logger.log(py_level, "%s", text)
 
     @staticmethod
     def _err_text(code: int) -> str:
@@ -216,16 +261,8 @@ class MpvRenderer(QQuickFramebufferObject):
         except Exception:
             return f"错误码 {code}"
 
-    def _dump_mpv_logs(self) -> str:
-        if not self._mpv_log_buf:
-            return ""
-        return "\n".join(f"    {msg}" for msg in self._mpv_log_buf)
-
     def _report_error(self, err_code: int) -> None:
-        logs = self._dump_mpv_logs()
         logger.warning("mpv 流错误: %s (code=%d)", self._err_text(err_code), err_code)
-        if logs:
-            logger.warning("mpv 详细日志:\n%s", logs)
 
     def _handle_end_file(self, data) -> None:
         if data is None:

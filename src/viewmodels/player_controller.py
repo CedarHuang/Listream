@@ -11,6 +11,7 @@ class PlayerController(QObject):
     volumeChanged = Signal()
     mutedChanged = Signal()
     afEnabledChanged = Signal()
+    vfEnabledChanged = Signal()
     titleChanged = Signal()
     statusChanged = Signal(str)
     urlChanged = Signal()
@@ -22,6 +23,7 @@ class PlayerController(QObject):
         self._pre_mute_volume = self._volume
         self._muted = storage.load_muted()
         self._af_enabled = storage.load_af_enabled()
+        self._vf_enabled = storage.load_vf_enabled()
         self._title = ""
         if self._muted:
             self._volume = 0
@@ -41,7 +43,9 @@ class PlayerController(QObject):
                 renderer.configure_proxy(self._proxy)
             renderer.setVolume(self._volume)
             renderer.afEnabled = self._af_enabled
+            renderer.vfEnabled = self._vf_enabled
             self.afEnabledChanged.emit()
+            self.vfEnabledChanged.emit()
 
     def configure_proxy(self, proxy: dict) -> None:
         self._proxy = proxy
@@ -103,6 +107,19 @@ class PlayerController(QObject):
             if self._renderer:
                 self._renderer.afEnabled = v
             storage.save_af_enabled(v)
+
+    @Property(bool, notify=vfEnabledChanged)
+    def vfEnabled(self) -> bool:
+        return self._vf_enabled
+
+    @vfEnabled.setter
+    def vfEnabled(self, v: bool) -> None:
+        if self._vf_enabled != v:
+            self._vf_enabled = v
+            self.vfEnabledChanged.emit()
+            if self._renderer:
+                self._renderer.vfEnabled = v
+            storage.save_vf_enabled(v)
 
     @Property(str, notify=titleChanged)
     def title(self) -> str:

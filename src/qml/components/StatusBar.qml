@@ -80,6 +80,36 @@ Rectangle {
         spacing: Theme.space2
 
         Text {
+            id: vfIcon
+            anchors.verticalCenter: parent.verticalCenter
+            text: "◎"
+            color: PlayerController.vfEnabled ? Theme.accent : Theme.textMuted
+            font.pixelSize: Theme.fontSizeXxl
+
+            MouseArea {
+                id: vfIconMouse
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: PlayerController.vfEnabled = !PlayerController.vfEnabled
+                hoverEnabled: true
+            }
+
+            ToolTip {
+                parent: vfIcon
+                visible: vfIconMouse.containsMouse
+                text: "画质增强 " + (PlayerController.vfEnabled ? "开" : "关")
+                delay: 200
+            }
+        }
+
+        Rectangle {
+            anchors.verticalCenter: parent.verticalCenter
+            width: 1
+            height: 14
+            color: Theme.border
+        }
+
+        Text {
             anchors.verticalCenter: parent.verticalCenter
             text: PlayerController.muted ? "🔇" : "🔊"
             color: PlayerController.muted ? Theme.error : Theme.textMuted
