@@ -35,6 +35,7 @@ class MpvRenderer(QQuickFramebufferObject):
         self._play_count = 0
         self._loading = False
         self._loading_sn = 0
+        self._playback_started = False
 
         self.onFrameReady.connect(self._do_update)
 
@@ -64,6 +65,7 @@ class MpvRenderer(QQuickFramebufferObject):
             self._play_count += 1
             self._loading = True
             self._loading_sn = self._play_count
+            self._playback_started = False
             self.statusChanged.emit("loading")
             self._mpv.play(url)
 
@@ -73,6 +75,7 @@ class MpvRenderer(QQuickFramebufferObject):
             logger.info("mpv 停止")
             self._mpv.stop()
         self._loading = False
+        self._playback_started = False
         self._emit_status("stopped")
 
     @Slot()
@@ -183,8 +186,11 @@ class MpvRenderer(QQuickFramebufferObject):
 
     def _on_eof(self, _name, value):
         if value and self._play_count > 0:
+            if self._loading:
+                return
             logger.info("mpv 播放结束 (EOF)")
             self._loading = False
+            self._playback_started = False
             self._emit_status("stopped")
 
     def _on_cache_state(self, _name, value):
@@ -201,13 +207,14 @@ class MpvRenderer(QQuickFramebufferObject):
         if value:
             if self._play_count == 0:
                 return
+            if not self._playback_started and not self._loading:
+                return
             if self._loading:
                 if self._loading_sn != self._play_count:
                     return
-                self._loading = False
             logger.info("mpv 缓冲不足，暂停等待")
             self._emit_status("buffering")
-        elif not self._loading and self._play_count > 0:
+        elif self._playback_started and self._play_count > 0:
             logger.info("mpv 缓冲完成，恢复播放")
             if self._mpv and self._mpv.pause:
                 self._emit_status("paused")
@@ -272,6 +279,9 @@ class MpvRenderer(QQuickFramebufferObject):
             self._emit_status("error:stream")
         elif data.reason == 0:  # EOF
             logger.info("mpv 流正常结束 (EOF)")
+            if self._loading:
+                self._loading = False
+                self._emit_status("stopped")
         elif data.reason == 2:  # ABORTED
             logger.info("mpv 流被中断 (ABORTED)")
 
@@ -279,6 +289,7 @@ class MpvRenderer(QQuickFramebufferObject):
         if self._loading and self._loading_sn == self._play_count:
             logger.info("mpv 播放已开始 (PLAYBACK_RESTART)")
             self._loading = False
+            self._playback_started = True
             self._emit_status("playing")
 
     def _on_mpv_event(self, event):
