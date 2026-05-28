@@ -121,6 +121,36 @@ def save_af_enabled(enabled: bool) -> None:
     save_config(data)
 
 
+def load_af_max_gain() -> int:
+    data = load_config()
+    v = data.get("af_max_gain")
+    if isinstance(v, (int, float)):
+        v = int(v)
+        return v if v >= 2 else 2
+    return 2
+
+
+def save_af_max_gain(value: int) -> None:
+    data = load_config()
+    data["af_max_gain"] = value
+    save_config(data)
+
+
+def load_af_target_rms() -> float:
+    data = load_config()
+    v = data.get("af_target_rms")
+    if isinstance(v, (int, float)):
+        v = float(v)
+        return v if 0.0 <= v <= 1.0 else 0.2
+    return 0.2
+
+
+def save_af_target_rms(value: float) -> None:
+    data = load_config()
+    data["af_target_rms"] = value
+    save_config(data)
+
+
 def load_vf_enabled() -> bool:
     data = load_config()
     v = data.get("vf_enabled")

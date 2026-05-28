@@ -161,23 +161,58 @@ Rectangle {
             }
         }
 
-        Text {
-            id: afIcon
+        Item {
+            id: afColumn
             anchors.verticalCenter: parent.verticalCenter
-            text: "≈"
-            color: PlayerController.afEnabled ? Theme.accent : Theme.textMuted
-            font.pixelSize: Theme.fontSizeXxl
+            anchors.verticalCenterOffset: -2
+            width: afIcon.width
+            height: afIcon.height + 2
+
+            Text {
+                id: afIcon
+                anchors.top: parent.top
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "≈"
+                color: PlayerController.afEnabled ? Theme.accent : Theme.textMuted
+                font.pixelSize: Theme.fontSizeXxl
+            }
+
+            Row {
+                id: afDotsRow
+                y: afIcon.font.pixelSize + 1
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 2
+                Repeater {
+                    model: 3
+                    delegate: Rectangle {
+                        property int threshold: (index + 1) * 2
+                        width: 2.5; height: 2.5
+                        radius: 1.25
+                        color: {
+                            if (!PlayerController.afEnabled) return Theme.textMuted
+                            return PlayerController.afMaxGain >= threshold ? Theme.accent : Theme.textMuted
+                        }
+                    }
+                }
+            }
 
             MouseArea {
                 id: afIconMouse
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
-                onClicked: PlayerController.afEnabled = !PlayerController.afEnabled
+                onClicked: PlayerController.cycleAfGain()
                 hoverEnabled: true
             }
 
             FloatingTip {
-                text: "响度均衡 " + (PlayerController.afEnabled ? "开" : "关")
+                text: {
+                    if (!PlayerController.afEnabled) return "响度均衡 关"
+                    var g = PlayerController.afMaxGain
+                    if (g === 2) return "响度均衡 低"
+                    if (g === 4) return "响度均衡 中"
+                    if (g === 6) return "响度均衡 高"
+                    return "响度均衡"
+                }
                 visible: afIconMouse.containsMouse
                 align: "right"
             }

@@ -11,6 +11,8 @@ class PlayerController(QObject):
     volumeChanged = Signal()
     mutedChanged = Signal()
     afEnabledChanged = Signal()
+    afMaxGainChanged = Signal()
+    afTargetRmsChanged = Signal()
     vfEnabledChanged = Signal()
     titleChanged = Signal()
     statusChanged = Signal(str)
@@ -23,6 +25,8 @@ class PlayerController(QObject):
         self._pre_mute_volume = self._volume
         self._muted = storage.load_muted()
         self._af_enabled = storage.load_af_enabled()
+        self._af_max_gain = storage.load_af_max_gain()
+        self._af_target_rms = storage.load_af_target_rms()
         self._vf_enabled = storage.load_vf_enabled()
         self._title = ""
         if self._muted:
@@ -43,8 +47,12 @@ class PlayerController(QObject):
                 renderer.configure_proxy(self._proxy)
             renderer.setVolume(self._volume)
             renderer.afEnabled = self._af_enabled
+            renderer.afMaxGain = self._af_max_gain
+            renderer.afTargetRms = self._af_target_rms
             renderer.vfEnabled = self._vf_enabled
             self.afEnabledChanged.emit()
+            self.afMaxGainChanged.emit()
+            self.afTargetRmsChanged.emit()
             self.vfEnabledChanged.emit()
 
     def configure_proxy(self, proxy: dict) -> None:
@@ -107,6 +115,53 @@ class PlayerController(QObject):
             if self._renderer:
                 self._renderer.afEnabled = v
             storage.save_af_enabled(v)
+
+    @Property(int, notify=afMaxGainChanged)
+    def afMaxGain(self) -> int:
+        return self._af_max_gain
+
+    @afMaxGain.setter
+    def afMaxGain(self, v: int) -> None:
+        v = max(2, min(100, v))
+        if self._af_max_gain != v:
+            self._af_max_gain = v
+            self.afMaxGainChanged.emit()
+            if self._renderer:
+                self._renderer.afMaxGain = v
+            storage.save_af_max_gain(v)
+
+    @Property(float, notify=afTargetRmsChanged)
+    def afTargetRms(self) -> float:
+        return self._af_target_rms
+
+    @afTargetRms.setter
+    def afTargetRms(self, v: float) -> None:
+        v = round(max(0.0, min(1.0, v)), 1)
+        if self._af_target_rms != v:
+            self._af_target_rms = v
+            self.afTargetRmsChanged.emit()
+            if self._renderer:
+                self._renderer.afTargetRms = v
+            storage.save_af_target_rms(v)
+
+    _AF_LEVELS = [(2, 0.2), (4, 0.3), (6, 0.4)]
+
+    @Slot()
+    def cycleAfGain(self) -> None:
+        if not self._af_enabled:
+            self.afMaxGain = self._AF_LEVELS[0][0]
+            self.afTargetRms = self._AF_LEVELS[0][1]
+            self.afEnabled = True
+        else:
+            for i, (m, r) in enumerate(self._AF_LEVELS):
+                if self._af_max_gain == m:
+                    if i + 1 < len(self._AF_LEVELS):
+                        self.afMaxGain = self._AF_LEVELS[i + 1][0]
+                        self.afTargetRms = self._AF_LEVELS[i + 1][1]
+                    else:
+                        self.afEnabled = False
+                    return
+            self.afEnabled = False
 
     @Property(bool, notify=vfEnabledChanged)
     def vfEnabled(self) -> bool:

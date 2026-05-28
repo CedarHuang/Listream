@@ -12,7 +12,8 @@ _mpv_logger = logging.getLogger("mpv")
 QML_IMPORT_NAME = "Listream.QmlItems"
 QML_IMPORT_MAJOR_VERSION = 1
 
-_AF_FILTER = "lavfi=[dynaudnorm=f=500:g=7:m=2:r=0.2:o=0.72]"
+def _build_af(max_gain: int, target_rms: float) -> str:
+    return f"lavfi=[dynaudnorm=f=500:g=7:m={max_gain}:r={target_rms}:o=0.72]"
 _VF_FILTER = "lavfi=[cas=strength=0.6]"
 
 
@@ -22,6 +23,8 @@ class MpvRenderer(QQuickFramebufferObject):
     cacheProgressChanged = Signal(float, float)
     onFrameReady = Signal()
     afEnabledChanged = Signal()
+    afMaxGainChanged = Signal()
+    afTargetRmsChanged = Signal()
     vfEnabledChanged = Signal()
 
     def __init__(self, parent=None):
@@ -30,6 +33,8 @@ class MpvRenderer(QQuickFramebufferObject):
         self._proxy = {}
         self._volume = 80
         self._af_enabled = True
+        self._af_max_gain = 2
+        self._af_target_rms = 0.2
         self._vf_enabled = True
         self._mpv_ok = True
         self._play_count = 0
@@ -100,8 +105,31 @@ class MpvRenderer(QQuickFramebufferObject):
         if self._af_enabled != v:
             self._af_enabled = v
             self.afEnabledChanged.emit()
-            if self._mpv:
-                self._mpv["af"] = _AF_FILTER if v else ""
+            self._apply_af()
+
+    @Property(int, notify=afMaxGainChanged)
+    def afMaxGain(self) -> int:
+        return self._af_max_gain
+
+    @afMaxGain.setter
+    def afMaxGain(self, v: int) -> None:
+        v = max(2, min(100, v))
+        if self._af_max_gain != v:
+            self._af_max_gain = v
+            self.afMaxGainChanged.emit()
+            self._apply_af()
+
+    @Property(float, notify=afTargetRmsChanged)
+    def afTargetRms(self) -> float:
+        return self._af_target_rms
+
+    @afTargetRms.setter
+    def afTargetRms(self, v: float) -> None:
+        v = round(max(0.0, min(1.0, v)), 1)
+        if self._af_target_rms != v:
+            self._af_target_rms = v
+            self.afTargetRmsChanged.emit()
+            self._apply_af()
 
     @Property(bool, notify=vfEnabledChanged)
     def vfEnabled(self) -> bool:
@@ -129,6 +157,13 @@ class MpvRenderer(QQuickFramebufferObject):
 
     # ---- 内部 ----
 
+    def _af_filter(self) -> str:
+        return _build_af(self._af_max_gain, self._af_target_rms) if self._af_enabled else ""
+
+    def _apply_af(self) -> None:
+        if self._mpv:
+            self._mpv["af"] = self._af_filter()
+
     def _init_mpv(self):
         if self._mpv or not self._mpv_ok:
             return
@@ -145,7 +180,7 @@ class MpvRenderer(QQuickFramebufferObject):
                 "osc": "no",
                 "input_cursor": "no",
                 "input_default_bindings": "no",
-                "af": _AF_FILTER if self._af_enabled else "",
+                "af": self._af_filter(),
                 "vf": _VF_FILTER if self._vf_enabled else "",
                 "deband": self._vf_enabled,
                 "deband-iterations": 2,
