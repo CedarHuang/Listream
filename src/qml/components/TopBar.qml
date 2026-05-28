@@ -17,11 +17,14 @@ Rectangle {
     MouseArea {
         anchors.fill: parent
         property point clickPos: "0,0"
+        property bool _suppressDrag: false
 
         onPressed: (mouse) => {
+            _suppressDrag = false
             clickPos = Qt.point(mouse.x, mouse.y)
         }
         onPositionChanged: (mouse) => {
+            if (_suppressDrag) return
             var dx = mouse.x - clickPos.x
             var dy = mouse.y - clickPos.y
             if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return
@@ -46,6 +49,7 @@ Rectangle {
             win.y = c.y - clickPos.y
         }
         onDoubleClicked: {
+            _suppressDrag = true
             var win = bar.Window.window
             if (win.visibility === Window.FullScreen)
                 win.exitFullscreen()
