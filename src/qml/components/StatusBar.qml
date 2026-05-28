@@ -94,11 +94,9 @@ Rectangle {
                 hoverEnabled: true
             }
 
-            ToolTip {
-                parent: vfIcon
-                visible: vfIconMouse.containsMouse
+            FloatingTip {
                 text: "画质增强 " + (PlayerController.vfEnabled ? "开" : "关")
-                delay: 200
+                visible: vfIconMouse.containsMouse
             }
         }
 
@@ -128,6 +126,7 @@ Rectangle {
             width: 100
             from: 0; to: 100
             value: PlayerController.volume
+            hoverEnabled: true
             onMoved: PlayerController.volume = Math.round(value)
             onPressedChanged: if (!pressed) PlayerController.save_volume()
 
@@ -155,11 +154,10 @@ Rectangle {
                 color: volSlider.pressed ? Theme.accentHover : Theme.accent
             }
 
-            ToolTip {
-                parent: volSlider.handle
-                visible: volSlider.hovered || volSlider.pressed
+            FloatingTip {
+                target: volSlider.handle
                 text: Math.round(volSlider.value)
-                delay: 200
+                visible: volSlider.hovered || volSlider.pressed
             }
         }
 
@@ -178,11 +176,10 @@ Rectangle {
                 hoverEnabled: true
             }
 
-            ToolTip {
-                parent: afIcon
-                visible: afIconMouse.containsMouse
+            FloatingTip {
                 text: "响度均衡 " + (PlayerController.afEnabled ? "开" : "关")
-                delay: 200
+                visible: afIconMouse.containsMouse
+                align: "right"
             }
         }
     }

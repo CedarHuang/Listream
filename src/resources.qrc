@@ -4,6 +4,7 @@
     <file>qml/Theme/qmldir</file>
     <file>qml/Theme/Theme.qml</file>
     <file>qml/Components/qmldir</file>
+    <file>qml/Components/FloatingTip.qml</file>
     <file>qml/Components/TopBar.qml</file>
     <file>qml/Components/SearchBar.qml</file>
     <file>qml/Components/ChannelList.qml</file>
