@@ -19,7 +19,7 @@ Rectangle {
     visible: {
         if (!PlayerController.showMeta) return false
         var s = PlayerController.status
-        return s === "playing" || s === "paused"
+        return s === "playing" || s === "paused" || s === "buffering"
     }
     Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
 

@@ -2,7 +2,7 @@ import ctypes
 import json
 import logging
 
-from PySide6.QtCore import Signal, Slot, Property
+from PySide6.QtCore import QTimer, Signal, Slot, Property
 from PySide6.QtGui import QOpenGLContext
 from PySide6.QtQuick import QQuickFramebufferObject
 from PySide6.QtQml import QmlElement
@@ -28,6 +28,7 @@ class MpvRenderer(QQuickFramebufferObject):
     afTargetRmsChanged = Signal()
     vfEnabledChanged = Signal()
     videoMetaChanged = Signal()
+    _metaDirty = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -44,6 +45,12 @@ class MpvRenderer(QQuickFramebufferObject):
         self._loading_sn = 0
         self._playback_started = False
         self._video_meta = {}
+        self._color_parts = {}
+        self._meta_timer = QTimer()
+        self._meta_timer.setSingleShot(True)
+        self._meta_timer.setInterval(50)
+        self._meta_timer.timeout.connect(self._emit_meta)
+        self._metaDirty.connect(self._on_meta_dirty)
 
         self.onFrameReady.connect(self._do_update)
 
@@ -79,6 +86,7 @@ class MpvRenderer(QQuickFramebufferObject):
 
     def _clear_meta(self) -> None:
         self._video_meta = {}
+        self._color_parts = {}
         self.videoMetaChanged.emit()
 
     @Slot()
@@ -179,30 +187,61 @@ class MpvRenderer(QQuickFramebufferObject):
 
     _COLOR_PROPS = ["video-params/primaries", "video-params/gamma"]
 
+    @staticmethod
+    def _is_valid_meta(val) -> bool:
+        return val is not None and val != "" and val != "no"
+
     def _collect_meta(self) -> None:
+        """全量采集——在 PLAYBACK_RESTART 时兜底，弥补 observe 通知的不可靠性"""
         if not self._mpv:
             return
-        meta = {}
         for prop in self._META_PROPS:
             try:
                 val = getattr(self._mpv, prop.replace("-", "_"))
-                if val is not None:
-                    meta[prop] = val
             except Exception:
-                pass
-        parts = []
+                continue
+            if self._is_valid_meta(val):
+                self._video_meta[prop] = val
+            else:
+                self._video_meta.pop(prop, None)
         for prop in self._COLOR_PROPS:
             try:
                 val = getattr(self._mpv, prop.replace("-", "_"))
-                if val:
-                    parts.append(str(val))
             except Exception:
-                pass
+                continue
+            if val:
+                self._color_parts[prop] = str(val)
+            else:
+                self._color_parts.pop(prop, None)
+        self._emit_meta()
+
+    def _on_meta_property(self, name, value):
+        if name in self._COLOR_PROPS:
+            if value:
+                self._color_parts[name] = str(value)
+            else:
+                self._color_parts.pop(name, None)
+        elif self._is_valid_meta(value):
+            self._video_meta[name] = value
+        else:
+            return  # 忽略瞬态空值：不删除已有数据，不触发刷新
+        self._metaDirty.emit()
+
+    def _on_meta_dirty(self):
+        """防抖入口——跨线程通过信号排队到主线程后，安全启动计时器"""
+        self._meta_timer.start()
+
+    def _emit_meta(self):
+        parts = []
+        for prop in self._COLOR_PROPS:
+            val = self._color_parts.get(prop)
+            if val:
+                parts.append(val)
         if parts:
-            meta["colorspace"] = " / ".join(parts)
-        if meta != self._video_meta:
-            self._video_meta = meta
-            self.videoMetaChanged.emit()
+            self._video_meta["colorspace"] = " / ".join(parts)
+        else:
+            self._video_meta.pop("colorspace", None)
+        self.videoMetaChanged.emit()
 
     def _af_filter(self) -> str:
         return _build_af(self._af_max_gain, self._af_target_rms) if self._af_enabled else ""
@@ -247,6 +286,8 @@ class MpvRenderer(QQuickFramebufferObject):
             self._mpv.observe_property("eof-reached", self._on_eof)
             self._mpv.observe_property("demuxer-cache-state", self._on_cache_state)
             self._mpv.observe_property("paused-for-cache", self._on_paused_for_cache)
+            for prop in self._META_PROPS + self._COLOR_PROPS:
+                self._mpv.observe_property(prop, self._on_meta_property)
             self._register_mpv_events()
             self.setVolume(self._volume)
             logger.info("mpv(libmpv) 已初始化")
