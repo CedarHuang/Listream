@@ -1,4 +1,5 @@
 import ctypes
+import json
 import logging
 
 from PySide6.QtCore import Signal, Slot, Property
@@ -26,6 +27,7 @@ class MpvRenderer(QQuickFramebufferObject):
     afMaxGainChanged = Signal()
     afTargetRmsChanged = Signal()
     vfEnabledChanged = Signal()
+    videoMetaChanged = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -41,6 +43,7 @@ class MpvRenderer(QQuickFramebufferObject):
         self._loading = False
         self._loading_sn = 0
         self._playback_started = False
+        self._video_meta = {}
 
         self.onFrameReady.connect(self._do_update)
 
@@ -74,6 +77,10 @@ class MpvRenderer(QQuickFramebufferObject):
             self.statusChanged.emit("loading")
             self._mpv.play(url)
 
+    def _clear_meta(self) -> None:
+        self._video_meta = {}
+        self.videoMetaChanged.emit()
+
     @Slot()
     def stop(self) -> None:
         if self._mpv:
@@ -81,6 +88,7 @@ class MpvRenderer(QQuickFramebufferObject):
             self._mpv.stop()
         self._loading = False
         self._playback_started = False
+        self._clear_meta()
         self._emit_status("stopped")
 
     @Slot()
@@ -145,6 +153,10 @@ class MpvRenderer(QQuickFramebufferObject):
                 self._mpv["scale"] = "ewa_lanczossharp" if v else "lanczos"
                 self._mpv["vf"] = _VF_FILTER if v else ""
 
+    @Property(str, notify=videoMetaChanged)
+    def videoMeta(self) -> str:
+        return json.dumps(self._video_meta, ensure_ascii=False)
+
     def configure_proxy(self, proxy: dict) -> None:
         self._proxy = proxy
         if self._mpv:
@@ -156,6 +168,41 @@ class MpvRenderer(QQuickFramebufferObject):
                 self._mpv["http-proxy"] = ""
 
     # ---- 内部 ----
+
+    _META_PROPS = [
+        "video-codec", "video-params/w", "video-params/h",
+        "video-params/pixelformat", "hwdec-current", "estimated-vf-fps",
+        "audio-codec", "audio-bitrate",
+        "audio-params/samplerate", "audio-params/channel-count",
+        "file-format",
+    ]
+
+    _COLOR_PROPS = ["video-params/primaries", "video-params/gamma"]
+
+    def _collect_meta(self) -> None:
+        if not self._mpv:
+            return
+        meta = {}
+        for prop in self._META_PROPS:
+            try:
+                val = getattr(self._mpv, prop.replace("-", "_"))
+                if val is not None:
+                    meta[prop] = val
+            except Exception:
+                pass
+        parts = []
+        for prop in self._COLOR_PROPS:
+            try:
+                val = getattr(self._mpv, prop.replace("-", "_"))
+                if val:
+                    parts.append(str(val))
+            except Exception:
+                pass
+        if parts:
+            meta["colorspace"] = " / ".join(parts)
+        if meta != self._video_meta:
+            self._video_meta = meta
+            self.videoMetaChanged.emit()
 
     def _af_filter(self) -> str:
         return _build_af(self._af_max_gain, self._af_target_rms) if self._af_enabled else ""
@@ -314,6 +361,7 @@ class MpvRenderer(QQuickFramebufferObject):
             self._emit_status("error:stream")
         elif data.reason == 0:  # EOF
             logger.info("mpv 流正常结束 (EOF)")
+            self._clear_meta()
             if self._loading:
                 self._loading = False
                 self._emit_status("stopped")
@@ -325,6 +373,7 @@ class MpvRenderer(QQuickFramebufferObject):
             logger.info("mpv 播放已开始 (PLAYBACK_RESTART)")
             self._loading = False
             self._playback_started = True
+            self._collect_meta()
             self._emit_status("playing")
 
     def _on_mpv_event(self, event):

@@ -74,6 +74,7 @@ Rectangle {
     }
 
     Row {
+        id: statusRow
         anchors.verticalCenter: parent.verticalCenter
         anchors.right: parent.right
         anchors.rightMargin: Theme.space3
@@ -97,6 +98,7 @@ Rectangle {
             FloatingTip {
                 text: "画质增强 " + (PlayerController.vfEnabled ? "开" : "关")
                 visible: vfIconMouse.containsMouse
+                container: statusRow
             }
         }
 
@@ -158,6 +160,7 @@ Rectangle {
                 target: volSlider.handle
                 text: Math.round(volSlider.value)
                 visible: volSlider.hovered || volSlider.pressed
+                container: statusRow
             }
         }
 
@@ -214,7 +217,36 @@ Rectangle {
                     return "响度均衡"
                 }
                 visible: afIconMouse.containsMouse
-                align: "right"
+                container: statusRow
+            }
+        }
+
+        Rectangle {
+            anchors.verticalCenter: parent.verticalCenter
+            width: 1
+            height: 14
+            color: Theme.border
+        }
+
+        Text {
+            id: metaIcon
+            anchors.verticalCenter: parent.verticalCenter
+            text: "ⓘ"
+            color: PlayerController.showMeta ? Theme.accent : Theme.textMuted
+            font.pixelSize: Theme.fontSizeLg
+
+            MouseArea {
+                id: metaIconMouse
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: PlayerController.toggleMeta()
+                hoverEnabled: true
+            }
+
+            FloatingTip {
+                text: "视频信息 " + (PlayerController.showMeta ? "开" : "关")
+                visible: metaIconMouse.containsMouse
+                container: statusRow
             }
         }
     }

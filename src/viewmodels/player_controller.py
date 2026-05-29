@@ -14,6 +14,8 @@ class PlayerController(QObject):
     afMaxGainChanged = Signal()
     afTargetRmsChanged = Signal()
     vfEnabledChanged = Signal()
+    videoMetaChanged = Signal()
+    showMetaChanged = Signal()
     titleChanged = Signal()
     statusChanged = Signal(str)
     urlChanged = Signal()
@@ -37,12 +39,15 @@ class PlayerController(QObject):
         self._proxy = {}
         self._cache_duration = 0.0
         self._cache_speed = 0.0
+        self._video_meta = ""
+        self._show_meta = storage.load_show_meta()
 
     def set_renderer(self, renderer) -> None:
         self._renderer = renderer
         if renderer is not None:
             renderer.statusChanged.connect(self._on_renderer_status)
             renderer.cacheProgressChanged.connect(self._on_cache_progress)
+            renderer.videoMetaChanged.connect(self._on_video_meta)
             if self._proxy:
                 renderer.configure_proxy(self._proxy)
             renderer.setVolume(self._volume)
@@ -65,6 +70,11 @@ class PlayerController(QObject):
         if status.startswith("error:"):
             logger.error("渲染器错误: %s", status)
         self.statusChanged.emit(status)
+
+    def _on_video_meta(self) -> None:
+        if self._renderer:
+            self._video_meta = self._renderer.videoMeta
+            self.videoMetaChanged.emit()
 
     def _on_cache_progress(self, duration: float, speed: float) -> None:
         self._cache_duration = duration
@@ -218,3 +228,22 @@ class PlayerController(QObject):
     @Property(float, notify=cacheProgressChanged)
     def cacheSpeed(self) -> float:
         return self._cache_speed
+
+    @Property(str, notify=videoMetaChanged)
+    def videoMeta(self) -> str:
+        return self._video_meta
+
+    @Property(bool, notify=showMetaChanged)
+    def showMeta(self) -> bool:
+        return self._show_meta
+
+    @showMeta.setter
+    def showMeta(self, v: bool) -> None:
+        if self._show_meta != v:
+            self._show_meta = v
+            self.showMetaChanged.emit()
+            storage.save_show_meta(v)
+
+    @Slot()
+    def toggleMeta(self) -> None:
+        self.showMeta = not self._show_meta
