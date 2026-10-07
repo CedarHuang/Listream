@@ -1,7 +1,6 @@
 import logging
 
 from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
-from PySide6.QtGui import QCursor
 
 from ..services.subscription_manager import SubscriptionManager
 from ..services.logo_cache import LogoCache
@@ -15,6 +14,7 @@ from ..services.storage import (
 from .channel_list_model import ChannelListModel, ChannelFilterModel
 from .subscription_list_model import SubscriptionListModel
 from .player_controller import PlayerController
+from .window_state import WindowState
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,7 @@ class AppBackend(QObject):
         self._filter_model.setSourceModel(self._channel_model)
         self._sub_model = SubscriptionListModel(self)
         self._player = PlayerController(self)
+        self._window_state = WindowState(self)
         self._fetcher = Fetcher(self)
         self._fetcher.fetched.connect(self._on_fetched)
         self._logo_cache = LogoCache(self)
@@ -42,7 +43,6 @@ class AppBackend(QObject):
         self._last_channel = load_last_channel()
         self._busy_count = 0
         self._refreshing_all = False
-        self._hwnd = 0
 
     @Property(bool, notify=busyChanged)
     def busy(self) -> bool:
@@ -78,6 +78,10 @@ class AppBackend(QObject):
     @property
     def player(self) -> PlayerController:
         return self._player
+
+    @property
+    def windowState(self) -> WindowState:
+        return self._window_state
 
     @Property(str, constant=True)
     def version(self) -> str:
@@ -158,39 +162,10 @@ class AppBackend(QObject):
             return
         self._manager.move_subscription(from_index, to_index)
 
-    @Slot()
-    def forceClearMaxWindowStyle(self) -> None:
-        """Win32: 强制清除 WS_MAXIMIZE 样式 + SW_RESTORE。"""
-        if not self._hwnd:
-            return
-        import ctypes
-        from ctypes import wintypes
-        h = wintypes.HWND(self._hwnd)
-        SW_RESTORE = 9
-        GWL_STYLE = -16
-        WS_MAXIMIZE = 0x01000000
-        ctypes.windll.user32.ShowWindow(h, SW_RESTORE)
-        style = ctypes.windll.user32.GetWindowLongW(h, GWL_STYLE)
-        if style & WS_MAXIMIZE:
-            ctypes.windll.user32.SetWindowLongW(h, GWL_STYLE, style & ~WS_MAXIMIZE)
-
     @Slot(str, str)
     def playChannel(self, url: str, name: str) -> None:
         save_last_channel(url, name)
         self._player.play(url, name)
-
-    @Slot(float, float, float, float)
-    def saveWindowRect(self, x: float, y: float, w: float, h: float) -> None:
-        self._windowRect = {"x": x, "y": y, "w": w, "h": h}
-
-    @Slot(result="QVariantMap")
-    def getCursorPos(self) -> dict:
-        pos = QCursor.pos()
-        return {"x": pos.x(), "y": pos.y()}
-
-    @Slot(result="QVariantMap")
-    def getWindowRect(self) -> dict:
-        return self._windowRect if hasattr(self, "_windowRect") else {}
 
     @Slot(QObject)
     def setRenderer(self, renderer: QObject) -> None:

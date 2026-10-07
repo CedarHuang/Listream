@@ -5,7 +5,6 @@ import Listream.QmlItems 1.0
 import Theme 1.0
 
 Rectangle {
-    id: pane
     color: Theme.bgPlayer
 
     Loader {
@@ -105,12 +104,6 @@ Rectangle {
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton
         enabled: PlayerController.status === "playing" || PlayerController.status === "paused"
-        onDoubleClicked: {
-            var win = pane.Window.window
-            if (win.visibility === Window.FullScreen)
-                win.exitFullscreen()
-            else
-                win.enterFullscreen()
-        }
+        onDoubleClicked: WindowState.toggleFullscreen()
     }
 }

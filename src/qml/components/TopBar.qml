@@ -29,32 +29,27 @@ Rectangle {
             var dy = mouse.y - clickPos.y
             if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return
             var win = bar.Window.window
-            if (win.visibility === Window.Maximized || win.visibility === Window.FullScreen) {
-                var nr = AppBackend.getWindowRect()
-                if (Object.keys(nr).length === 0) return
+
+            if (!WindowState.windowed) {
                 if (Math.abs(dy) < 10) return
+                // 最大化/全屏 → 脱离为 Windowed（尺寸由 WindowState 按记忆几何恢复），
+                // 再按光标锚点定位。全屏下拖拽同样退出全屏。
                 var fracX = mouse.x / bar.width
-                var c = AppBackend.getCursorPos()
-                win.beginDragUnmaximize()
-                win.visibility = Window.Windowed
-                win.width = nr.w
-                win.height = nr.h
-                win.x = c.x - fracX * nr.w
-                win.y = c.y - mouse.y
-                clickPos = Qt.point(fracX * nr.w, mouse.y)
+                var pressCursor = WindowState.cursorPos()
+                WindowState.beginDragMove()
+                clickPos = Qt.point(fracX * win.width, mouse.y)
+                win.x = pressCursor.x - clickPos.x
+                win.y = pressCursor.y - clickPos.y
                 return
             }
-            var c = AppBackend.getCursorPos()
-            win.x = c.x - clickPos.x
-            win.y = c.y - clickPos.y
+
+            var dragCursor = WindowState.cursorPos()
+            win.x = dragCursor.x - clickPos.x
+            win.y = dragCursor.y - clickPos.y
         }
         onDoubleClicked: {
             _suppressDrag = true
-            var win = bar.Window.window
-            if (win.visibility === Window.FullScreen)
-                win.exitFullscreen()
-            else
-                win.toggleMaximized()
+            WindowState.toggleMaximized()  // 全屏时由状态机自行决定退回进全屏前的模式
         }
     }
 
@@ -129,7 +124,7 @@ Rectangle {
                     radius: Theme.radiusSm
                 }
             }
-            onClicked: bar.Window.window.showMinimized()
+            onClicked: WindowState.minimize()
             contentItem: Item {
                 Canvas {
                     anchors.centerIn: parent
@@ -160,13 +155,7 @@ Rectangle {
                     radius: Theme.radiusSm
                 }
             }
-            onClicked: {
-                var win = bar.Window.window
-                if (win.visibility === Window.FullScreen)
-                    win.exitFullscreen()
-                else
-                    win.toggleMaximized()
-            }
+            onClicked: WindowState.toggleMaximized()
             contentItem: Item {
                 Canvas {
                     anchors.centerIn: parent

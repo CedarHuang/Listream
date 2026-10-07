@@ -16,100 +16,30 @@ ApplicationWindow {
     property bool sidebarCollapsed: false
     property bool _sidebarBeforeFullscreen: false
     property bool _skipAnim: false
-    property bool _wasMaximized: false
-    property bool _maximizedBeforeFullscreen: false
-    property int _prevVisibility: Window.Windowed
     readonly property color _themeBorder: Theme.border  // Python 侧 DWM 描边读取用
 
     Timer { id: animTimer; interval: 0; onTriggered: root._skipAnim = false }
-    Timer {
-        id: _restoreMaxTimer
-        interval: 0; repeat: false
-        onTriggered: root.showMaximized()
-    }
 
-    // ---- 窗口状态操作（唯一真相源） ----
-
-    function beginDragUnmaximize() {
-        root._wasMaximized = false
-        AppBackend.forceClearMaxWindowStyle()
-    }
-
-    function toggleMaximized() {
-        if (root.visibility === Window.Maximized) {
-            root._wasMaximized = false
-            AppBackend.forceClearMaxWindowStyle()
-            root.visibility = Window.Windowed
-            var nr = AppBackend.getWindowRect()
-            if (Object.keys(nr).length > 0) {
-                root.x = nr.x; root.y = nr.y
-                root.width = nr.w; root.height = nr.h
-            }
-        } else if (root.visibility === Window.Windowed) {
-            AppBackend.saveWindowRect(root.x, root.y, root.width, root.height)
-            root.showMaximized()
-        }
-    }
-
-    function enterFullscreen() {
-        root._maximizedBeforeFullscreen = root._wasMaximized
-        if (root.visibility === Window.Windowed)
-            AppBackend.saveWindowRect(root.x, root.y, root.width, root.height)
-        root._skipAnim = true
-        root._sidebarBeforeFullscreen = root.sidebarCollapsed
-        root.sidebarCollapsed = true
-        root.showFullScreen()
-        animTimer.start()
-    }
-
-    function exitFullscreen() {
-        if (root._maximizedBeforeFullscreen) {
-            root._maximizedBeforeFullscreen = false
-            root.showMaximized()
-        } else {
-            root._wasMaximized = false
-            var nr = AppBackend.getWindowRect()
-            AppBackend.forceClearMaxWindowStyle()
-            root.visibility = Window.Windowed
-            if (Object.keys(nr).length > 0) {
-                root.x = nr.x; root.y = nr.y
-                root.width = nr.w; root.height = nr.h
-            }
-        }
-    }
-
-    onVisibilityChanged: (v) => {
-        var prev = root._prevVisibility
-
-        if (v === Window.Maximized) {
-            root._wasMaximized = true
-        } else if (v === Window.FullScreen) {
-            root._wasMaximized = false
-        } else if (v === Window.Windowed && prev === Window.Maximized) {
-            root._wasMaximized = false
-        } else if (v === Window.Windowed && prev === Window.Minimized && root._wasMaximized) {
-            root._wasMaximized = false
-            _restoreMaxTimer.start()
-        }
-
-        root._prevVisibility = v
-
-        if (v !== Window.FullScreen && _sidebarBeforeFullscreen !== sidebarCollapsed) {
+    // 全屏强制折叠侧栏，退出全屏恢复其原状。
+    // 只由 fullscreen 这一个布尔量驱动 —— 最小化不会改变它，因此不会误触发恢复。
+    Connections {
+        target: WindowState
+        function onFullscreenChanged() {
             root._skipAnim = true
-            sidebarCollapsed = _sidebarBeforeFullscreen
+            if (WindowState.fullscreen) {
+                root._sidebarBeforeFullscreen = root.sidebarCollapsed
+                root.sidebarCollapsed = true
+            } else {
+                root.sidebarCollapsed = root._sidebarBeforeFullscreen
+            }
             animTimer.start()
         }
     }
 
     Shortcut { sequence: "Space"; onActivated: PlayerController.togglePause() }
-    Shortcut { sequence: "Escape"; onActivated: { if (root.visibility === Window.FullScreen) root.exitFullscreen() }}
+    Shortcut { sequence: "Escape"; onActivated: { if (WindowState.fullscreen) WindowState.exitFullscreen() }}
     Shortcut { sequence: "Tab"; onActivated: root.sidebarCollapsed = !root.sidebarCollapsed }
-    Shortcut { sequence: "F"; onActivated: {
-        if (root.visibility === Window.FullScreen)
-            root.exitFullscreen()
-        else
-            root.enterFullscreen()
-    }}
+    Shortcut { sequence: "F"; onActivated: WindowState.toggleFullscreen() }
     Shortcut { sequence: "I"; onActivated: PlayerController.toggleMeta() }
 
     ColumnLayout {
@@ -232,7 +162,7 @@ ApplicationWindow {
     Item {
         id: resizeHandles
         anchors.fill: parent
-        enabled: root.visibility === Window.Windowed
+        enabled: WindowState.windowed
 
         MouseArea {
             height: 4; anchors { left: parent.left; right: parent.right; top: parent.top }
