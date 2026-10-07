@@ -114,13 +114,20 @@ Rectangle {
 
         Button {
             id: minBtn
-            width: 46; height: 32
+            // 命中区占满标题栏高度：最大化后屏幕顶边即窗口顶边，
+            // 鼠标甩到右上角（Fitts 定律）必须能命中，不能留顶部死区。
+            width: 46; height: bar.height
             hoverEnabled: true
             flat: true
             padding: 0
-            background: Rectangle {
-                color: minBtn.hovered ? Theme.bgHover : "transparent"
-                radius: Theme.radiusSm
+            background: Item {
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.topMargin: 4
+                    anchors.bottomMargin: 4
+                    color: minBtn.hovered ? Theme.bgHover : "transparent"
+                    radius: Theme.radiusSm
+                }
             }
             onClicked: bar.Window.window.showMinimized()
             contentItem: Item {
@@ -140,13 +147,18 @@ Rectangle {
 
         Button {
             id: maxBtn
-            width: 46; height: 32
+            width: 46; height: bar.height
             hoverEnabled: true
             flat: true
             padding: 0
-            background: Rectangle {
-                color: maxBtn.hovered ? Theme.bgHover : "transparent"
-                radius: Theme.radiusSm
+            background: Item {
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.topMargin: 4
+                    anchors.bottomMargin: 4
+                    color: maxBtn.hovered ? Theme.bgHover : "transparent"
+                    radius: Theme.radiusSm
+                }
             }
             onClicked: {
                 var win = bar.Window.window
@@ -172,13 +184,18 @@ Rectangle {
 
         Button {
             id: closeBtn
-            width: 46; height: 32
+            width: 46; height: bar.height
             hoverEnabled: true
             flat: true
             padding: 0
-            background: Rectangle {
-                color: closeBtn.hovered ? Theme.error : "transparent"
-                radius: Theme.radiusSm
+            background: Item {
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.topMargin: 4
+                    anchors.bottomMargin: 4
+                    color: closeBtn.hovered ? Theme.error : "transparent"
+                    radius: Theme.radiusSm
+                }
             }
             onClicked: bar.Window.window.close()
             contentItem: Item {
