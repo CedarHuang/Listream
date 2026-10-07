@@ -110,6 +110,7 @@ ApplicationWindow {
         else
             root.enterFullscreen()
     }}
+    Shortcut { sequence: "I"; onActivated: PlayerController.toggleMeta() }
 
     ColumnLayout {
         anchors.fill: parent
