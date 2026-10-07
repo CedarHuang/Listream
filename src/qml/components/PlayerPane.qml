@@ -98,6 +98,51 @@ Rectangle {
         }
     }
 
+    Rectangle {
+        anchors.fill: parent
+        visible: PlayerController.status.startsWith("error")
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: Theme.bgWindow }
+            GradientStop { position: 1.0; color: Theme.bgPlayer }
+        }
+
+        Column {
+            anchors.centerIn: parent
+            spacing: Theme.space4
+
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "播放失败"
+                color: Theme.error
+                font.pixelSize: Theme.fontSizeXl
+            }
+
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                visible: PlayerController.title !== ""
+                text: PlayerController.title
+                color: Theme.textSecondary
+                font.pixelSize: Theme.fontSizeMd
+            }
+
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "该频道暂时无法播放，可能是源已离线或网络异常。"
+                color: Theme.textMuted
+                font.pixelSize: Theme.fontSizeSm
+            }
+
+            TextButton {
+                anchors.horizontalCenter: parent.horizontalCenter
+                visible: PlayerController.currentUrl !== ""
+                text: "重试"
+                textColor: Theme.accent
+                font.pixelSize: Theme.fontSizeMd
+                onClicked: AppBackend.playChannel(PlayerController.currentUrl, PlayerController.title)
+            }
+        }
+    }
+
     MetaOverlay {}
 
     MouseArea {

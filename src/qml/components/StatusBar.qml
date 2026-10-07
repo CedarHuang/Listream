@@ -24,10 +24,11 @@ Rectangle {
             width: 8; height: 8
             radius: Theme.radiusSm
             color: {
-                switch (PlayerController.status) {
+                var st = PlayerController.status
+                if (st.startsWith("error")) return Theme.error
+                switch (st) {
                     case "playing": return Theme.success
                     case "loading": return Theme.warning
-                    case "error": return Theme.error
                     default: return Theme.textMuted
                 }
             }

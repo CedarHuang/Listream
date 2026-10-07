@@ -165,6 +165,9 @@ class AppBackend(QObject):
     @Slot(str, str)
     def playChannel(self, url: str, name: str) -> None:
         save_last_channel(url, name)
+        # 同步会话内的 lastChannel* 属性，否则封面「上次观看 / 继续播放」会停留在启动时的值
+        self._last_channel = {"url": url, "name": name}
+        self.lastChannelChanged.emit()
         self._player.play(url, name)
 
     @Slot(QObject)

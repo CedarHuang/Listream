@@ -17,6 +17,11 @@ def _build_af(max_gain: int, target_rms: float) -> str:
     return f"lavfi=[dynaudnorm=f=500:g=7:m={max_gain}:r={target_rms}:o=0.72]"
 _VF_FILTER = "lavfi=[cas=strength=0.6]"
 
+# mpv mpv_end_file_reason：枚举为 0=EOF / 2=STOP / 3=QUIT / 4=ERROR / 5=REDIRECT
+_END_FILE_EOF = 0
+_END_FILE_STOP = 2
+_END_FILE_ERROR = 4
+
 
 @QmlElement
 class MpvRenderer(QQuickFramebufferObject):
@@ -29,6 +34,7 @@ class MpvRenderer(QQuickFramebufferObject):
     vfEnabledChanged = Signal()
     videoMetaChanged = Signal()
     _metaDirty = Signal()
+    _eofDirty = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -51,6 +57,12 @@ class MpvRenderer(QQuickFramebufferObject):
         self._meta_timer.setInterval(50)
         self._meta_timer.timeout.connect(self._emit_meta)
         self._metaDirty.connect(self._on_meta_dirty)
+
+        self._eof_timer = QTimer()
+        self._eof_timer.setSingleShot(True)
+        self._eof_timer.setInterval(500)
+        self._eof_timer.timeout.connect(self._recheck_eof)
+        self._eofDirty.connect(self._on_eof_dirty)
 
         self.onFrameReady.connect(self._do_update)
 
@@ -83,6 +95,9 @@ class MpvRenderer(QQuickFramebufferObject):
             self._playback_started = False
             self.statusChanged.emit("loading")
             self._mpv.play(url)
+            # keep-open=yes 会在上一路流自然结束时把 pause 置为 True，而 loadfile 不会复位它；
+            # 不复位则新频道只缓存不播放（缓存增长、画面静止），且 PLAYBACK_RESTART 仍会误报 playing
+            self._mpv.pause = False
 
     def _clear_meta(self) -> None:
         self._video_meta = {}
@@ -308,13 +323,28 @@ class MpvRenderer(QQuickFramebufferObject):
             self._emit_status("playing")
 
     def _on_eof(self, _name, value):
-        if value and self._play_count > 0:
-            if self._loading:
-                return
-            logger.info("mpv 播放结束 (EOF)")
-            self._loading = False
-            self._playback_started = False
-            self._emit_status("stopped")
+        if not value or self._play_count == 0:
+            return
+        if self._loading:
+            # 加载期间收到的 eof 通知不可轻信：可能是上一路流晚到的残留，
+            # 也可能是新流在 PLAYBACK_RESTART 前就结束了。延后复读实时属性再判定。
+            self._eofDirty.emit()
+            return
+        self._finish_playback("EOF")
+
+    def _finish_playback(self, reason: str) -> None:
+        logger.info("mpv 播放结束 (%s)", reason)
+        self._loading = False
+        self._playback_started = False
+        self._emit_status("stopped")
+
+    def _on_eof_dirty(self):
+        """防抖入口——跨线程通过信号排队到主线程后，安全启动计时器"""
+        self._eof_timer.start()
+
+    def _recheck_eof(self):
+        if self._loading and self._mpv and self._mpv.eof_reached:
+            self._finish_playback("EOF，加载阶段即时结束")
 
     def _on_cache_state(self, _name, value):
         if not value:
@@ -397,17 +427,17 @@ class MpvRenderer(QQuickFramebufferObject):
     def _handle_end_file(self, data) -> None:
         if data is None:
             return
-        if data.reason == 4:  # ERROR
+        reason = data.reason
+        if reason == _END_FILE_ERROR:
             self._report_error(data.error)
             self._emit_status("error:stream")
-        elif data.reason == 0:  # EOF
+        elif reason == _END_FILE_EOF:
+            # keep-open=yes 下自然播完不会发 END_FILE（要等下次换源才补发），
+            # 状态收尾统一由 _on_eof 负责，这里只兜底记录
             logger.info("mpv 流正常结束 (EOF)")
             self._clear_meta()
-            if self._loading:
-                self._loading = False
-                self._emit_status("stopped")
-        elif data.reason == 2:  # ABORTED
-            logger.info("mpv 流被中断 (ABORTED)")
+        elif reason == _END_FILE_STOP:
+            logger.info("mpv 上一路流被中止（换源或停止）")
 
     def _handle_playback_restart(self) -> None:
         if self._loading and self._loading_sn == self._play_count:
