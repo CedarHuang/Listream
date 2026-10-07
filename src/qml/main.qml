@@ -12,7 +12,11 @@ ApplicationWindow {
     title: "Listream"
     visible: true
     color: Theme.bgWindow
-    flags: Qt.Window | Qt.FramelessWindowHint
+    // 必须显式声明装饰提示：任务栏按钮的「点击最小化」依赖原生样式位 WS_MINIMIZEBOX。
+    // Qt 6.10 会给未定制装饰的无边框窗口补上默认标题栏装饰集（WS_SYSMENU|WS_MINIMIZEBOX|
+    // WS_MAXIMIZEBOX），Qt 6.11 改为严格按 flags 计算，于是裸的 FramelessWindowHint 只剩
+    // WS_POPUP，任务栏点击不再最小化。显式声明后两个版本的原生样式完全一致。
+    flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowSystemMenuHint | Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint
     property bool sidebarCollapsed: false
     property bool _sidebarBeforeFullscreen: false
     property bool _skipAnim: false
