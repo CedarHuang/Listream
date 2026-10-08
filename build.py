@@ -26,6 +26,10 @@ DLL_DIR = SRC / "libs"
 DLL = DLL_DIR / "libmpv-2.dll"
 ICON_SVG = SRC / "assets" / "icon.svg"
 ICON_ICO = SRC / "assets" / "icon.ico"
+ICON_PNG = SRC / "assets" / "icon.png"
+
+# icon.svg 渲染尺寸（ICO 全部使用；PNG 只用最大的一档）
+_ICON_SIZES = [256, 128, 64, 48, 32, 24, 16]
 
 MPV_REPO = "shinchiro/mpv-winbuild-cmake"
 MPV_API = f"https://api.github.com/repos/{MPV_REPO}/releases/latest"
@@ -124,48 +128,72 @@ def _excluded_qml_dirs() -> list[str]:
 # 图标生成
 # ---------------------------------------------------------------------------
 
-def compile_icon() -> None:
-    """将 icon.svg 转换为 icon.ico（多尺寸）。"""
-    if ICON_ICO.is_file() and ICON_ICO.stat().st_mtime >= ICON_SVG.stat().st_mtime:
-        print(f"[icon] 已存在: {ICON_ICO.relative_to(ROOT)}")
-        return
-
-    print(f"[icon] 生成 {ICON_ICO.name} ...")
-    from tempfile import TemporaryDirectory
-
+def _render_icon_images() -> list:
+    """用 Qt 把 icon.svg 渲染成各尺寸 QImage。"""
     from PySide6.QtCore import QSize, Qt
     from PySide6.QtGui import QGuiApplication, QImage, QPainter
     from PySide6.QtSvg import QSvgRenderer
-
-    from PIL import Image as PILImage
 
     app = QGuiApplication.instance()
     if app is None:
         app = QGuiApplication(["--platform", "offscreen"])
 
     renderer = QSvgRenderer(str(ICON_SVG))
-    sizes = [256, 128, 64, 48, 32, 24, 16]
-    pil_images = []
+    images = []
+    for s in _ICON_SIZES:
+        img = QImage(QSize(s, s), QImage.Format_ARGB32)
+        img.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(img)
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+        renderer.render(painter)
+        painter.end()
+        images.append(img)
+    return images
 
-    with TemporaryDirectory() as tmp:
-        for s in sizes:
-            img = QImage(QSize(s, s), QImage.Format_ARGB32)
-            img.fill(Qt.GlobalColor.transparent)
-            painter = QPainter(img)
-            painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
-            renderer.render(painter)
-            painter.end()
-            png = Path(tmp) / f"icon_{s}.png"
-            img.save(str(png), "PNG")
-            with PILImage.open(png) as f:
-                pil_images.append(f.copy())
 
-    pil_images[0].save(
-        str(ICON_ICO), format="ICO",
-        sizes=[(p.width, p.height) for p in pil_images],
-        append_images=pil_images[1:],
-    )
-    print(f"  -> {ICON_ICO.relative_to(ROOT)}")
+def compile_icon() -> None:
+    """从 icon.svg 生成两份派生产物：
+
+    - icon.ico —— PyInstaller 的 exe 图标，多尺寸
+    - icon.png —— 运行期窗口/任务栏图标，编译进 QRC
+
+    窗口图标刻意用 PNG 而非 SVG：
+    PNG 由 Qt6Gui 内置解码，取图标时不依赖任何 imageformats/iconengines 插件；
+    SVG 图标则会连带拉起 qsvgicon.dll 与 Qt6Svg.dll。
+    """
+    need_png = not (ICON_PNG.is_file() and ICON_PNG.stat().st_mtime >= ICON_SVG.stat().st_mtime)
+    need_ico = not (ICON_ICO.is_file() and ICON_ICO.stat().st_mtime >= ICON_SVG.stat().st_mtime)
+    if not need_png and not need_ico:
+        print(f"[icon] 已存在: {ICON_ICO.relative_to(ROOT)}, {ICON_PNG.relative_to(ROOT)}")
+        return
+
+    print(f"[icon] 渲染 {ICON_SVG.name} ...")
+    images = _render_icon_images()
+    png_size = _ICON_SIZES[0]
+
+    if need_png:
+        images[0].save(str(ICON_PNG), "PNG")
+        print(f"  -> {ICON_PNG.relative_to(ROOT)} (窗口图标 {png_size}px)")
+
+    if need_ico:
+        from tempfile import TemporaryDirectory
+
+        from PIL import Image as PILImage
+
+        pil_images = []
+        with TemporaryDirectory() as tmp:
+            for s, img in zip(_ICON_SIZES, images):
+                png = Path(tmp) / f"icon_{s}.png"
+                img.save(str(png), "PNG")
+                with PILImage.open(png) as f:
+                    pil_images.append(f.copy())
+
+        pil_images[0].save(
+            str(ICON_ICO), format="ICO",
+            sizes=[(p.width, p.height) for p in pil_images],
+            append_images=pil_images[1:],
+        )
+        print(f"  -> {ICON_ICO.relative_to(ROOT)} (exe 图标 {len(pil_images)} 尺寸)")
 
 
 # ---------------------------------------------------------------------------

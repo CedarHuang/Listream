@@ -23,7 +23,8 @@ def main() -> None:
     logging.getLogger("main").info("Listream 启动")
 
     app = QGuiApplication(sys.argv)
-    app.setWindowIcon(QIcon(":/assets/icon.svg"))
+    # 用 PNG 而非 SVG：取窗口图标时不需要任何 imageformats/iconengines 插件
+    app.setWindowIcon(QIcon(":/assets/icon.png"))
     app.setApplicationName("Listream")
     app.setOrganizationName("CedarHuang")
 
