@@ -34,7 +34,10 @@ Listream 是一个 Windows 桌面直播播放器。添加 M3U 订阅链接，自
 
 从 [Releases](https://github.com/CedarHuang/Listream/releases) 下载 `Listream-v*-windows-x64.zip`，解压运行 `Listream.exe`。无需安装。
 
-数据目录：`%APPDATA%\CedarHuang\Listream\`
+数据目录：
+
+- 配置：`%APPDATA%\CedarHuang\Listream\`
+- 缓存与日志：`%LOCALAPPDATA%\CedarHuang\Listream\`
 
 ---
 

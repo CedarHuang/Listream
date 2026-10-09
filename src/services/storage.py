@@ -1,28 +1,26 @@
 import json
 import logging
 import os
-import shutil
 from pathlib import Path
 from typing import Optional
+
+from PySide6.QtCore import QStandardPaths
 
 logger = logging.getLogger(__name__)
 
 _json_cache: dict[Path, dict] = {}
 
-
-def _appdata_dir() -> Path:
-    base = os.environ.get("LISTREAM_DATA_DIR")
-    if base:
-        return Path(base)
-    return Path(os.environ["APPDATA"]) / "CedarHuang" / "Listream"
+# 路径由 QStandardPaths 依 QCoreApplication 的 applicationName/organizationName 推导，
+# 因此必须在 main.py 设置这两个名字之后调用（AppDataLocation 在 Windows 上才是 Roaming）。
+# 配置用 AppDataLocation 而非 AppConfigLocation：后者在 Windows 上落在 LocalAppData。
 
 
 def config_path() -> Path:
-    return _appdata_dir() / "config.json"
+    return Path(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)) / "config.json"
 
 
 def cache_dir() -> Path:
-    return _appdata_dir() / "cache"
+    return Path(QStandardPaths.writableLocation(QStandardPaths.CacheLocation))
 
 
 def logo_cache_dir() -> Path:
@@ -30,6 +28,7 @@ def logo_cache_dir() -> Path:
 
 
 def ensure_dirs() -> None:
+    config_path().parent.mkdir(parents=True, exist_ok=True)
     cache_dir().mkdir(parents=True, exist_ok=True)
     logo_cache_dir().mkdir(parents=True, exist_ok=True)
 
