@@ -12,7 +12,7 @@ from .storage import (
     delete_channel_cache,
 )
 from .m3u_parser import parse_m3u
-from .fetcher import Fetcher
+from .fetcher import Fetcher, REASON_ADD, REASON_BACKGROUND, REASON_REFRESH_ALL
 from .logo_cache import LogoCache
 from ..models.subscription import Subscription
 from ..models.channel import Channel
@@ -51,7 +51,7 @@ class SubscriptionManager:
         self._subscriptions.append(sub)
         logger.info("添加订阅 name=%s url=%s", name, url)
         self._persist()
-        self._schedule_fetch(sub)
+        self._schedule_fetch(sub, REASON_ADD)
         return sub
 
     def remove(self, subscription_id: str) -> None:
@@ -91,7 +91,7 @@ class SubscriptionManager:
     def refresh_all(self) -> None:
         for s in self._subscriptions:
             if s.enabled:
-                self._schedule_fetch(s)
+                self._schedule_fetch(s, REASON_REFRESH_ALL)
 
     def move_subscription(self, from_index: int, to_index: int) -> bool:
         n = len(self._subscriptions)
@@ -120,10 +120,10 @@ class SubscriptionManager:
                     pass
             self._schedule_fetch(s)
 
-    def _schedule_fetch(self, sub: Subscription) -> None:
+    def _schedule_fetch(self, sub: Subscription, reason: str = REASON_BACKGROUND) -> None:
         if self._fetcher is None:
             return
-        self._fetcher.fetch(sub.id, sub.url)
+        self._fetcher.fetch(sub.id, sub.url, reason)
 
     def on_fetch_completed(
         self, subscription_id: str, content: str | None, error: str

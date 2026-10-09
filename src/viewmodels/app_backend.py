@@ -1,10 +1,11 @@
 import logging
+from collections import Counter
 
 from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
 
 from ..services.subscription_manager import SubscriptionManager
 from ..services.logo_cache import LogoCache
-from ..services.fetcher import Fetcher
+from ..services.fetcher import Fetcher, REASON_BACKGROUND, REASON_REFRESH_ALL
 from ..services.storage import (
     load_last_channel,
     save_last_channel,
@@ -36,36 +37,34 @@ class AppBackend(QObject):
         self._player = PlayerController(self)
         self._window_state = WindowState(self)
         self._fetcher = Fetcher(self)
+        self._fetcher.fetchStarted.connect(self._on_fetch_started)
         self._fetcher.fetched.connect(self._on_fetched)
         self._logo_cache = LogoCache(self)
         self._manager = SubscriptionManager(self._fetcher, self._logo_cache)
         self._manager.set_on_channels_changed(self._on_channels_changed)
         self._last_channel = load_last_channel()
-        self._busy_count = 0
-        self._refreshing_all = False
+        # 未完成的抓取账本：reason -> 在飞请求数。每一笔都在 fetchStarted 里记下、
+        # 在 fetched 里凭同一个 reason 消掉，所以既不会漏消（UI 永久卡住），
+        # 也不会被别的来源的完成信号误消（提前熄灭）。
+        self._pending: Counter[str] = Counter()
 
     @Property(bool, notify=busyChanged)
     def busy(self) -> bool:
-        return self._busy_count > 0
+        """有由 UI 发起、会阻塞全局操作的抓取在进行（添加订阅 / 全部刷新）。
+
+        单条订阅的刷新、编辑后重抓、启动刷新都走 REASON_BACKGROUND，只反映在
+        订阅列表的 refreshing 角色上，不占用全局 busy。
+        """
+        return any(n for reason, n in self._pending.items() if reason != REASON_BACKGROUND)
 
     @Property(bool, notify=refreshingAllChanged)
     def refreshingAll(self) -> bool:
-        return self._refreshing_all
+        """全部刷新批次自身是否还有在飞请求。
 
-    def _inc_busy(self, n: int = 1) -> None:
-        was = self._busy_count > 0
-        self._busy_count += n
-        if not was:
-            self.busyChanged.emit()
-
-    def _dec_busy(self) -> None:
-        if self._busy_count > 0:
-            self._busy_count -= 1
-            if self._busy_count == 0:
-                self.busyChanged.emit()
-                if self._refreshing_all:
-                    self._refreshing_all = False
-                    self.refreshingAllChanged.emit()
+        与 busy 解耦：刷新期间添加订阅，批次跑完转圈就停，而按钮仍因 busy 保持禁用。
+        这里由账本推导而非锁存，本地文件与远程混排时也不会留下「已归零」的假状态。
+        """
+        return self._pending[REASON_REFRESH_ALL] > 0
 
     @property
     def channelModel(self):
@@ -121,9 +120,10 @@ class AppBackend(QObject):
     @Slot(str, str)
     def addSubscription(self, name: str, url: str) -> None:
         logger.info("添加订阅 name=%s url=%s", name, url)
-        sub = self._manager.add(name, url)
+        # 记账发生在 fetchStarted（见 _acquire），这里不必提前记账：本地文件订阅会在
+        # add 内同步抓完，提前计数就得额外配对；add 中途抛异常也不会再留下未消的账。
+        self._manager.add(name, url)
         self._sub_model.replace_all(self._manager.subscriptions)
-        self._sub_model.set_refreshing(sub.id, True)
 
     @Slot(str)
     def removeSubscription(self, sub_id: str) -> None:
@@ -143,16 +143,13 @@ class AppBackend(QObject):
 
     @Slot(str)
     def refreshSubscription(self, sub_id: str) -> None:
-        self._sub_model.set_refreshing(sub_id, True)
         self._manager.refresh(sub_id)
 
     @Slot()
     def refreshAll(self) -> None:
-        n = sum(1 for s in self._manager.subscriptions if s.enabled)
-        if n > 0:
-            self._inc_busy(n)
-        self._refreshing_all = True
-        self.refreshingAllChanged.emit()
+        # 没有启用的订阅就没有任何抓取：此时进 loading 态就再也没人来关掉它。
+        if not any(s.enabled for s in self._manager.subscriptions):
+            return
         self._manager.refresh_all()
 
     @Slot(int, int)
@@ -186,11 +183,37 @@ class AppBackend(QObject):
         self._fetcher.configure_proxy(proxy)
         self._player.configure_proxy(proxy)
 
-    def _on_fetched(self, sub_id: str, content: str | None, error: str) -> None:
+    def _acquire(self, reason: str) -> None:
+        """记一笔账，只有 busy / refreshingAll 这两个派生值真的翻转时才发通知。"""
+        was = (self.busy, self.refreshingAll)
+        self._pending[reason] += 1
+        self._notify_if_flipped(was)
+
+    def _release(self, reason: str) -> None:
+        """消一笔账；未入账的来源（或余额已空）直接忽略，绝不误扣别人的账。"""
+        if self._pending[reason] <= 0:
+            return
+        was = (self.busy, self.refreshingAll)
+        self._pending[reason] -= 1
+        if self._pending[reason] == 0:
+            del self._pending[reason]
+        self._notify_if_flipped(was)
+
+    def _notify_if_flipped(self, was: tuple[bool, bool]) -> None:
+        if self.busy != was[0]:
+            self.busyChanged.emit()
+        if self.refreshingAll != was[1]:
+            self.refreshingAllChanged.emit()
+
+    def _on_fetch_started(self, sub_id: str, reason: str) -> None:
+        self._acquire(reason)
+        self._sub_model.set_refreshing(sub_id, True)
+
+    def _on_fetched(self, sub_id: str, content: str | None, error: str, reason: str) -> None:
+        # 先消账再处理结果：后面的解析/落盘要是抛异常，也不能让这笔账永远挂着。
+        self._release(reason)
         self._manager.on_fetch_completed(sub_id, content, error)
         self._sub_model.set_refreshing(sub_id, False)
-        self._sub_model.notify_item(sub_id)
-        self._dec_busy()
         if error:
             logger.error("获取订阅失败 subscription_id=%s error=%s", sub_id, error)
             self.errorOccurred.emit("获取失败", error)
