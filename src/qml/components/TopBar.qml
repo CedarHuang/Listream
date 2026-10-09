@@ -85,19 +85,19 @@ Rectangle {
         TextButton {
             text: "订阅管理"
             font.pixelSize: Theme.fontSizeMd
-            onClicked: subDialog.open()
+            onClicked: { subDialog.active = true; subDialog.item.open() }
         }
 
         TextButton {
             text: "设置"
             font.pixelSize: Theme.fontSizeMd
-            onClicked: settingsDialog.open()
+            onClicked: { settingsDialog.active = true; settingsDialog.item.open() }
         }
 
         TextButton {
             text: "关于"
             font.pixelSize: Theme.fontSizeMd
-            onClicked: aboutDialog.open()
+            onClicked: { aboutDialog.active = true; aboutDialog.item.open() }
         }
     }
 
@@ -205,7 +205,9 @@ Rectangle {
         }
     }
 
-    SubscriptionDialog { id: subDialog }
-    SettingsDialog { id: settingsDialog }
-    AboutDialog { id: aboutDialog }
+    // 三个对话框只在首次打开时构造：它们合计体积超过 TopBar 本身，开局实例化会挤进首帧路径。
+    // 三者都以 parent: Overlay.overlay 挂到窗口，与 TopBar 的父子关系无关。
+    Loader { id: subDialog; active: false; source: "qrc:/qml/Components/SubscriptionDialog.qml" }
+    Loader { id: settingsDialog; active: false; source: "qrc:/qml/Components/SettingsDialog.qml" }
+    Loader { id: aboutDialog; active: false; source: "qrc:/qml/Components/AboutDialog.qml" }
 }

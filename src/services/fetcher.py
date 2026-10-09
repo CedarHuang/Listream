@@ -1,8 +1,6 @@
 import logging
-from urllib.parse import urlparse
-from urllib.request import url2pathname
 
-from PySide6.QtCore import QObject, Signal, QTimer
+from PySide6.QtCore import QObject, QUrl, Signal, QTimer
 from PySide6.QtNetwork import (
     QNetworkAccessManager,
     QNetworkProxy,
@@ -47,7 +45,7 @@ class Fetcher(QObject):
             self._fetch_remote(subscription_id, url)
 
     def _fetch_local(self, subscription_id: str, url: str) -> None:
-        path = url2pathname(urlparse(url).path)
+        path = QUrl(url).toLocalFile()
         try:
             logger.info("读取本地文件 subscription_id=%s path=%s", subscription_id, path)
             with open(path, "r", encoding="utf-8", errors="replace") as f:
